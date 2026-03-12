@@ -1,0 +1,1856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧅 Onion Press - Publisher</title>
+    <link rel="stylesheet" href="/onion-press/css/onion-press.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- OIP v0.9 Crypto Dependencies (loaded as ES modules in script below) -->
+    
+    <style>
+        /* ═══════════════════════════════════════════════════════════════════════════════
+           Publisher Page - Additional Styles
+           ═══════════════════════════════════════════════════════════════════════════════ */
+        
+        :root {
+            --accent-purple: #7c3aed;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --font-mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+        }
+
+        .publisher-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .publisher-header {
+            text-align: center;
+            margin-bottom: var(--spacing-2xl);
+            padding-bottom: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .publisher-header h1 {
+            font-size: 2rem;
+            margin-bottom: var(--spacing-sm);
+            background: linear-gradient(135deg, var(--accent-purple), #10b981);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .publisher-header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .method-selection {
+            margin-top: var(--spacing-xl);
+        }
+
+        .publishing-form {
+            margin-top: var(--spacing-xl);
+        }
+
+        .back-button {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            margin-bottom: var(--spacing-lg);
+            transition: var(--transition-fast);
+        }
+
+        .back-button:hover {
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+
+        /* Identity Section */
+        .identity-section {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .identity-section.active {
+            border-color: var(--accent-green);
+        }
+
+        .identity-section h2 {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            font-size: 1.3rem;
+        }
+
+        .identity-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent-purple);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .identity-section.active .identity-badge {
+            background: var(--accent-green);
+        }
+
+        .mnemonic-input {
+            width: 100%;
+            min-height: 100px;
+            padding: var(--spacing-md);
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-tertiary);
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: vertical;
+            transition: var(--transition-normal);
+        }
+
+        .mnemonic-input:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+            border-style: solid;
+        }
+
+        .mnemonic-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-md);
+        }
+
+        .identity-info {
+            margin-top: var(--spacing-lg);
+            padding: var(--spacing-md);
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--accent-green);
+            border-radius: var(--radius-md);
+        }
+
+        .identity-row {
+            display: flex;
+            align-items: baseline;
+            gap: var(--spacing-md);
+            padding: var(--spacing-xs) 0;
+        }
+
+        .identity-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            min-width: 100px;
+            font-size: 0.85rem;
+        }
+
+        .identity-value {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            word-break: break-all;
+            color: var(--accent-green);
+        }
+
+        /* Record Form Section */
+        .record-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .record-section h2 {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            font-size: 1.3rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-md);
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-tertiary);
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            transition: var(--transition-fast);
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* Destinations Section */
+        .destinations-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .destinations-section h2 {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .destination-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-md);
+        }
+
+        .destination-card {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .destination-card:hover {
+            border-color: var(--accent-purple);
+        }
+
+        .destination-card.selected {
+            border-color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .destination-card input {
+            width: 20px;
+            height: 20px;
+        }
+
+        .destination-icon {
+            font-size: 1.5rem;
+        }
+
+        .destination-info h4 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .destination-info p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* Publish Button */
+        .publish-actions {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-xl);
+        }
+
+        .publish-btn {
+            padding: var(--spacing-md) var(--spacing-2xl);
+            font-size: 1.2rem;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition-normal);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .publish-btn.primary {
+            background: var(--accent-purple);
+            color: white;
+        }
+
+        .publish-btn.primary:hover:not(:disabled) {
+            background: #6d28d9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+        }
+
+        .publish-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Status Messages */
+        .status-message {
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-md);
+            margin-top: var(--spacing-xl);
+            display: none;
+        }
+
+        .status-message.visible {
+            display: block;
+        }
+
+        .status-message.success {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .status-message.error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .status-message.processing {
+            background: rgba(124, 58, 237, 0.15);
+            border: 1px solid var(--accent-purple);
+            color: var(--accent-purple);
+        }
+
+        .status-message h3 {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .status-message .tx-link {
+            font-family: var(--font-mono);
+            word-break: break-all;
+        }
+
+        .status-message a {
+            color: inherit;
+            text-decoration: underline;
+        }
+
+        /* Warning Box */
+        .warning-box {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid var(--accent-orange);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+            font-size: 0.9rem;
+            color: var(--accent-orange);
+        }
+
+        .warning-box strong {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .info-box {
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid #3b82f6;
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+            font-size: 0.9rem;
+            color: #3b82f6;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .destination-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">🧅</span>
+                <span class="logo-text">Onion Press</span>
+            </div>
+            <nav class="nav">
+                <a href="/onion-press/" class="nav-btn">← Back to Browse</a>
+                <a href="/debug/v09" class="nav-btn">🔐 Debug Interface</a>
+            </nav>
+            <div class="header-actions">
+                <button class="theme-toggle-btn" id="themeToggle" title="Toggle light/dark mode">
+                    🌙
+                </button>
+                <div class="tor-status" id="torStatus" title="TOR Status">
+                    <span class="tor-indicator"></span>
+                    <span class="tor-label">TOR</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="publisher-container">
+            <div class="publisher-header">
+                <h1 id="publisherTitle">🔏 Publisher</h1>
+                <p id="publisherDescription">Choose your publishing method below.</p>
+            </div>
+            
+            <!-- Method Selection (shown initially) -->
+            <div id="methodSelection" class="method-selection">
+                <div class="publishing-methods">
+                    <div class="publishing-method-card" onclick="selectMethod('did')">
+                        <div class="method-header">
+                            <span class="method-icon">🔑</span>
+                            <h3>Decentralized ID</h3>
+                        </div>
+                        <p class="method-description">
+                            Uses the <a href="https://www.w3.org/TR/did/" target="_blank" class="method-link">DID spec</a> for completely login-less publishing with client-side mnemonic signing. If you wish to create a provable relationship between all of your posts, this is the method you'll want to use. Just save the mnemonic that is generated the first time you post and use it again in future posts to create a cryptographic connection between your posts.
+                        </p>
+                        <button class="method-action-btn" onclick="selectMethod('did')">Publish with DID →</button>
+                    </div>
+                    
+                    <div class="publishing-method-card" onclick="selectMethod('account')">
+                        <div class="method-header">
+                            <span class="method-icon">🔐</span>
+                            <h3>Account</h3>
+                        </div>
+                        <p class="method-description">
+                            Use your server account to publish. Posts will be identified by your account name. When Arweave is enabled, records are signed with both your account wallet and the server's creator key.
+                        </p>
+                        <button class="method-action-btn" onclick="selectMethod('account')">Publish with Account →</button>
+                    </div>
+                    
+                    <div class="publishing-method-card" onclick="selectMethod('anonymous')">
+                        <div class="method-header">
+                            <span class="method-icon">🔒</span>
+                            <h3>Anonymous</h3>
+                        </div>
+                        <p class="method-description">
+                            No account, no signatures, totally anonymous. Only downside is that there will be no relationship between your posts, so any trust you establish from one post cannot be leveraged in others.
+                        </p>
+                        <button class="method-action-btn" onclick="selectMethod('anonymous')">Publish Anonymously →</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- DID Publishing Form (hidden initially) -->
+            <div id="didForm" class="publishing-form hidden">
+                <button class="back-button" onclick="showMethodSelection()">← Back to Methods</button>
+                
+                <!-- Step 1: Identity -->
+                <section class="identity-section" id="identitySection">
+                    <h2><span class="identity-badge">1</span> Your Identity</h2>
+                    
+                    <div class="warning-box">
+                        <strong>⚠️ Security Warning</strong>
+                        Your mnemonic is your identity and signing key. It is processed entirely in your browser and never sent to any server. 
+                        However, only use this for testing or content you're comfortable having publicly attributed to this identity.
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mnemonic">BIP-39 Mnemonic (12 or 24 words)</label>
+                        <textarea id="mnemonic" class="mnemonic-input" 
+                            placeholder="Enter your mnemonic phrase here, or click 'Generate Test Mnemonic' below..."></textarea>
+                    </div>
+
+                    <div class="mnemonic-actions">
+                        <button id="generateMnemonicBtn" class="secondary-btn">🎲 Generate Test Mnemonic</button>
+                        <button id="loadIdentityBtn" class="primary-btn">🔑 Load Identity</button>
+                    </div>
+
+                    <div id="identityInfo" class="identity-info hidden">
+                        <div class="identity-row">
+                            <span class="identity-label">Your DID</span>
+                            <span class="identity-value" id="displayDid">-</span>
+                        </div>
+                        <div class="identity-row">
+                            <span class="identity-label">Signing xpub</span>
+                            <span class="identity-value" id="displayXpub">-</span>
+                        </div>
+                        <div class="identity-row">
+                            <span class="identity-label">Status</span>
+                            <span class="identity-value" style="color: var(--accent-green);">✓ Ready to sign records</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 2: Record -->
+                <section class="record-section">
+                    <h2><span class="identity-badge" style="background: var(--accent-orange);">2</span> Create Record</h2>
+
+                    <!-- Hidden: Record Type (defaults to "post") -->
+                    <select id="recordType" style="display: none;">
+                        <option value="post" selected>📰 Post / Article</option>
+                    </select>
+
+                    <div class="form-group">
+                        <label for="title">Title *</label>
+                        <input type="text" id="title" placeholder="Enter a title for your record..." required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" rows="2" placeholder="Brief description of your content..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="imageUrl">Image URL (optional)</label>
+                        <input type="url" id="imageUrl" class="form-input" placeholder="https://imgur.com/..." style="width: 100%; padding: 0.5rem; border-radius: 4px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary);">
+                        <small style="color: var(--text-muted); font-size: 0.85em; display: block; margin-top: 0.25rem;">Image will be embedded in your post content</small>
+                        <div id="imagePreview" style="margin-top: 0.5rem; display: none;">
+                            <img id="imagePreviewImg" src="" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: 4px; border: 1px solid var(--border-color);">
+                            <div id="imageDimensions" style="color: var(--text-muted); font-size: 0.85em; margin-top: 0.25rem;"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="content">Content *</label>
+                        <textarea id="content" rows="8" placeholder="The main content of your record..." required></textarea>
+                    </div>
+                </section>
+
+                <!-- Step 3: Destinations (Hidden - uses node defaults) -->
+                <section class="destinations-section" style="display: none;">
+                    <h2><span class="identity-badge" style="background: #06b6d4;">3</span> Publishing Destinations</h2>
+
+                    <div class="destination-grid">
+                        <label class="destination-card selected">
+                            <input type="checkbox" id="destArweave" checked>
+                            <span class="destination-icon">⛓️</span>
+                            <div class="destination-info">
+                                <h4>Arweave</h4>
+                                <p>Permanent blockchain storage</p>
+                            </div>
+                        </label>
+
+                        <label class="destination-card">
+                            <input type="checkbox" id="destGun">
+                            <span class="destination-icon">🔄</span>
+                            <div class="destination-info">
+                                <h4>GUN Network</h4>
+                                <p>Real-time peer sync</p>
+                            </div>
+                        </label>
+
+                        <label class="destination-card">
+                            <input type="checkbox" id="destThisHost">
+                            <span class="destination-icon">🏠</span>
+                            <div class="destination-info">
+                                <h4 id="thisHostName">This Host</h4>
+                                <p id="thisHostUrl">Loading...</p>
+                            </div>
+                        </label>
+                    </div>
+                </section>
+
+                <!-- Publish Button -->
+                <div class="publish-actions">
+                    <button id="publishBtn" class="publish-btn primary" disabled>
+                        🚀 Sign & Publish Record
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Account Publishing Form (hidden initially) -->
+            <div id="accountForm" class="publishing-form hidden">
+                <button class="back-button" onclick="showMethodSelection()">← Back to Methods</button>
+                
+                <h2>🔐 Account-Based Publishing</h2>
+                <p class="form-description">
+                    Use your server account to publish. You'll need to log in first.
+                </p>
+                
+                <!-- Login Section -->
+                <div id="accountLoginSection" class="form-section">
+                    <h3>Login Required</h3>
+                    <p>You need to be logged in to use account-based publishing.</p>
+                    <div class="form-group">
+                        <label for="accountEmail">Email:</label>
+                        <input type="email" id="accountEmail" placeholder="your@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="accountPassword">Password:</label>
+                        <input type="password" id="accountPassword" placeholder="Your password" required>
+                    </div>
+                    <button class="primary-btn" id="accountLoginBtn" style="width: 100%; margin-top: var(--spacing-md);">Login</button>
+                    <div id="accountLoginStatus" class="status-message"></div>
+                    <p class="form-note">Don't have an account? <a href="/onion-press/" onclick="alert('Please register through the main interface first')">Register here</a></p>
+                </div>
+                
+                <!-- Publishing Form (shown after login) -->
+                <div id="accountPublishSection" class="form-section hidden">
+                    <h3>Create Post</h3>
+                    <div class="form-group">
+                        <label for="accountTitle">Title:</label>
+                        <input type="text" id="accountTitle" placeholder="Post title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="accountDescription">Description</label>
+                        <textarea id="accountDescription" rows="2" placeholder="Brief description of your content..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="accountContent">Content:</label>
+                        <textarea id="accountContent" rows="10" placeholder="Your post content..." required></textarea>
+                    </div>
+                    
+                    <!-- Destination Selection (Hidden - uses node defaults) -->
+                    <div class="form-group" style="display: none;">
+                        <label>Publish To:</label>
+                        <div class="destination-grid">
+                            <label class="destination-checkbox">
+                                <input type="checkbox" id="accountDestArweave" checked>
+                                <span>Arweave</span>
+                            </label>
+                            <label class="destination-checkbox">
+                                <input type="checkbox" id="accountDestGun">
+                                <span>GUN</span>
+                            </label>
+                            <label class="destination-checkbox">
+                                <input type="checkbox" id="accountDestThisHost">
+                                <span>This Host</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button class="primary-btn" id="accountPublishBtn" style="width: 100%; margin-top: var(--spacing-md);">Publish</button>
+                    <div id="accountStatus" class="status-message"></div>
+                </div>
+            </div>
+            
+            <!-- Anonymous Publishing Form (hidden initially) -->
+            <div id="anonymousForm" class="publishing-form hidden">
+                <button class="back-button" onclick="showMethodSelection()">← Back to Methods</button>
+                
+                <div class="info-box">
+                    <strong>ℹ️ Anonymous Publishing</strong>
+                    This method publishes without any cryptographic signatures. Your posts will be completely anonymous with no way to prove authorship or link posts together. Perfect for whistleblowing or completely anonymous publishing.
+                </div>
+                
+                <!-- Step 1: Record -->
+                <section class="record-section">
+                    <h2><span class="identity-badge" style="background: var(--accent-orange);">1</span> Create Record</h2>
+
+                    <!-- Hidden: Record Type (defaults to "post") -->
+                    <select id="anonRecordType" style="display: none;">
+                        <option value="post" selected>📰 Post / Article</option>
+                    </select>
+
+                    <div class="form-group">
+                        <label for="anonByline">Byline / Author Name</label>
+                        <input type="text" id="anonByline" placeholder="Anonymous">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="anonTitle">Title *</label>
+                        <input type="text" id="anonTitle" placeholder="Enter a title for your record..." required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="anonDescription">Description</label>
+                        <textarea id="anonDescription" rows="2" placeholder="Brief description of your content..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="anonContent">Content *</label>
+                        <textarea id="anonContent" rows="8" placeholder="The main content of your record..." required></textarea>
+                    </div>
+                </section>
+
+                <!-- Step 2: Destinations (Admin Only) -->
+                <section class="destinations-section admin-only hidden" id="anonDestinationsSection">
+                    <h2><span class="identity-badge" style="background: #06b6d4;">2</span> Publishing Destinations</h2>
+
+                    <div class="destination-grid">
+                        <label class="destination-card selected">
+                            <input type="checkbox" id="anonDestArweave" checked>
+                            <span class="destination-icon">⛓️</span>
+                            <div class="destination-info">
+                                <h4>Arweave</h4>
+                                <p>Permanent blockchain storage</p>
+                            </div>
+                        </label>
+
+                        <label class="destination-card">
+                            <input type="checkbox" id="anonDestGun">
+                            <span class="destination-icon">🔄</span>
+                            <div class="destination-info">
+                                <h4>GUN Network</h4>
+                                <p>Real-time peer sync</p>
+                            </div>
+                        </label>
+
+                        <label class="destination-card">
+                            <input type="checkbox" id="anonDestThisHost">
+                            <span class="destination-icon">🏠</span>
+                            <div class="destination-info">
+                                <h4 id="anonThisHostName">This Host</h4>
+                                <p id="anonThisHostUrl">Loading...</p>
+                            </div>
+                        </label>
+                    </div>
+                </section>
+
+                <!-- Publish Button -->
+                <div class="publish-actions">
+                    <button id="anonPublishBtn" class="publish-btn primary">
+                        🚀 Publish Anonymously
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status Messages -->
+            <div id="statusMessage" class="status-message"></div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <span>OIP v0.9 Publisher</span>
+            <span class="separator">|</span>
+            <span>Powered by <a href="https://oip.io" target="_blank">Open Index Protocol</a></span>
+        </div>
+    </footer>
+
+    <script type="module">
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // OIP v0.9 Publisher - DID and Anonymous Publishing
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        // Import crypto libraries (only needed for DID mode)
+        import { HDKey } from 'https://esm.sh/@scure/bip32@1.3.3';
+        import { mnemonicToSeedSync, validateMnemonic, generateMnemonic } from 'https://esm.sh/@scure/bip39@1.2.2';
+        import { wordlist } from 'https://esm.sh/@scure/bip39@1.2.2/wordlists/english';
+        import { sha256 } from 'https://esm.sh/@noble/hashes@1.3.3/sha256';
+        import { secp256k1 } from 'https://esm.sh/@noble/curves@1.3.0/secp256k1';
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // CONSTANTS
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        const OIP_PURPOSE = 176800;
+        const OIP_VERSION = '0.9.0';
+
+        // State
+        let identity = null;
+        let currentMethod = null;
+        let defaultDestinations = {
+            arweave: false,
+            gun: false,
+            thisHost: true
+        };
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // METHOD SELECTION
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        // Account state
+        let accountToken = localStorage.getItem('onionpress_token');
+        let accountUser = null;
+
+        function selectMethod(method) {
+            currentMethod = method;
+            const methodSelection = document.getElementById('methodSelection');
+            const didForm = document.getElementById('didForm');
+            const anonymousForm = document.getElementById('anonymousForm');
+            const accountForm = document.getElementById('accountForm');
+            const title = document.getElementById('publisherTitle');
+            const description = document.getElementById('publisherDescription');
+            
+            methodSelection.classList.add('hidden');
+            
+            if (method === 'did') {
+                didForm.classList.remove('hidden');
+                anonymousForm.classList.add('hidden');
+                accountForm.classList.add('hidden');
+                title.textContent = '🔑 Publish with DID';
+                description.textContent = 'Create a provable cryptographic identity for your posts.';
+            } else if (method === 'anonymous') {
+                didForm.classList.add('hidden');
+                anonymousForm.classList.remove('hidden');
+                accountForm.classList.add('hidden');
+                title.textContent = '🔒 Anonymous Publisher';
+                description.textContent = 'Publish completely anonymously with no signatures or identity.';
+            } else if (method === 'account') {
+                didForm.classList.add('hidden');
+                anonymousForm.classList.add('hidden');
+                accountForm.classList.remove('hidden');
+                title.textContent = '🔐 Account-Based Publishing';
+                description.textContent = 'Publish using your server account.';
+                
+                // Check if already logged in
+                if (accountToken) {
+                    checkAccountLogin();
+                }
+            }
+        }
+
+        function showMethodSelection() {
+            currentMethod = null;
+            const methodSelection = document.getElementById('methodSelection');
+            const didForm = document.getElementById('didForm');
+            const anonymousForm = document.getElementById('anonymousForm');
+            const accountForm = document.getElementById('accountForm');
+            const title = document.getElementById('publisherTitle');
+            const description = document.getElementById('publisherDescription');
+            
+            methodSelection.classList.remove('hidden');
+            didForm.classList.add('hidden');
+            anonymousForm.classList.add('hidden');
+            accountForm.classList.add('hidden');
+            title.textContent = '🔏 Publisher';
+            description.textContent = 'Choose your publishing method below.';
+        }
+
+        // Check URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const methodParam = urlParams.get('method');
+        if (methodParam === 'did' || methodParam === 'anonymous' || methodParam === 'account') {
+            selectMethod(methodParam);
+        }
+        
+        // Account login functions
+        async function accountLogin() {
+            const email = document.getElementById('accountEmail')?.value;
+            const password = document.getElementById('accountPassword')?.value;
+            const statusDiv = document.getElementById('accountLoginStatus');
+            
+            if (!email || !password) {
+                if (statusDiv) {
+                    statusDiv.textContent = 'Please enter email and password';
+                    statusDiv.className = 'status-message error';
+                } else {
+                    alert('Please enter email and password');
+                }
+                return;
+            }
+            
+            try {
+                if (statusDiv) {
+                    statusDiv.textContent = 'Logging in...';
+                    statusDiv.className = 'status-message info';
+                }
+                
+                const response = await fetch('/api/user/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.token) {
+                    accountToken = data.token;
+                    accountUser = { 
+                        email, 
+                        publicKey: data.publicKey,
+                        wordpressUserId: data.wordpressUserId 
+                    };
+                    localStorage.setItem('onionpress_token', accountToken);
+                    
+                    // Show publish form
+                    document.getElementById('accountLoginSection').classList.add('hidden');
+                    document.getElementById('accountPublishSection').classList.remove('hidden');
+                    
+                    if (statusDiv) {
+                        statusDiv.textContent = 'Login successful!';
+                        statusDiv.className = 'status-message success';
+                    }
+                } else {
+                    throw new Error(data.error || data.message || 'Login failed');
+                }
+            } catch (error) {
+                const errorMsg = `Login failed: ${error.message}`;
+                if (statusDiv) {
+                    statusDiv.textContent = errorMsg;
+                    statusDiv.className = 'status-message error';
+                } else {
+                    alert(errorMsg);
+                }
+            }
+        }
+        
+        async function checkAccountLogin() {
+            if (!accountToken) return;
+            
+            try {
+                // Verify token is still valid by checking user info
+                const response = await fetch('/api/user/mnemonic', {
+                    headers: { 'Authorization': `Bearer ${accountToken}` }
+                });
+                
+                if (response.ok) {
+                    // Token is valid, show publish form
+                    document.getElementById('accountLoginSection').classList.add('hidden');
+                    document.getElementById('accountPublishSection').classList.remove('hidden');
+                } else {
+                    // Token invalid, clear it
+                    accountToken = null;
+                    localStorage.removeItem('onionpress_token');
+                }
+            } catch (error) {
+                // Token invalid
+                accountToken = null;
+                localStorage.removeItem('onionpress_token');
+            }
+        }
+        
+        async function publishAccount() {
+            const title = document.getElementById('accountTitle')?.value;
+            const content = document.getElementById('accountContent')?.value;
+            const statusDiv = document.getElementById('accountStatus');
+            
+            if (!title || !content) {
+                if (statusDiv) {
+                    statusDiv.textContent = 'Please fill in title and content';
+                    statusDiv.className = 'status-message error';
+                } else {
+                    alert('Please fill in title and content');
+                }
+                return;
+            }
+            
+            if (!accountToken) {
+                if (statusDiv) {
+                    statusDiv.textContent = 'Please login first';
+                    statusDiv.className = 'status-message error';
+                } else {
+                    alert('Please login first');
+                }
+                return;
+            }
+            
+            // Use default destinations from node settings (destination selection is hidden)
+            const destinations = { ...defaultDestinations };
+            
+            // Only require password if Arweave is enabled (needed for wallet decryption)
+            // For local-only publishing, we can use publishAnonymous endpoint instead
+            const needsPassword = destinations.arweave || destinations.gun;
+            
+            // If only publishing to WordPress (local-only), use publishAnonymous endpoint
+            // but mark it as account-based so it uses the logged-in user's WordPress account
+            if (!needsPassword && destinations.thisHost) {
+                try {
+                    // Use showStatus for consistent UI
+                    const statusEl = document.getElementById('accountStatus');
+                    if (statusEl) {
+                        showStatus('processing', '⏳ Publishing...', 'Please wait while your post is submitted.');
+                    }
+                    
+                    // Build payload (same format as anonymous, but WITHOUT Anonymous tag for account-based publishing)
+                    const description = document.getElementById('accountDescription')?.value.trim() || '';
+                    const payload = {
+                        tags: [
+                            { name: 'Index-Method', value: 'OIP' },
+                            { name: 'Ver', value: '0.9.0' },
+                            { name: 'Content-Type', value: 'application/json' },
+                            { name: 'Record-Type', value: 'post' }
+                            // NOTE: Do NOT include Anonymous tag - this is account-based publishing
+                        ],
+                        records: [{
+                            basic: {
+                                name: title,
+                                description: description || undefined
+                            },
+                            post: {
+                                articleText: content,
+                                bylineWriter: accountUser?.email || 'Account User'
+                            }
+                        }]
+                    };
+                    
+                    // Use publishAnonymous endpoint but with auth token so it knows we're logged in
+                    const response = await fetch('/onion-press/api/records/publishAnonymous', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accountToken}`
+                        },
+                        body: JSON.stringify({ payload, destinations })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success || data.destinations?.thisHost) {
+                        const wpResult = data.destinations?.thisHost;
+                        
+                        // Build success message (same format as anonymous publishing)
+                        let successMessage = '<p>Your post has been published!</p>';
+                        if (wpResult?.success || wpResult?.postId) {
+                            const permalink = wpResult.permalink || wpResult.postUrl || `/wordpress/?p=${wpResult.postId}`;
+                            successMessage += `
+                                <p><strong>✅ WordPress:</strong> Published</p>
+                                <p><strong>Post ID:</strong> ${wpResult.postId || 'N/A'}</p>
+                                ${permalink ? `<p><a href="${permalink}" target="_blank">View WordPress Post →</a></p>` : ''}
+                            `;
+                        }
+                        successMessage += `<p><a href="/onion-press/" class="link">View in Browse →</a></p>`;
+                        
+                        // Use showStatus function for consistent UI (use accountStatus element)
+                        const statusEl = document.getElementById('accountStatus');
+                        if (statusEl) {
+                            statusEl.className = `status-message visible success`;
+                            statusEl.innerHTML = `<h3>✅ Published Successfully!</h3><div>${successMessage}</div>`;
+                        }
+                        
+                        // Clear form
+                        document.getElementById('accountTitle').value = '';
+                        document.getElementById('accountDescription').value = '';
+                        document.getElementById('accountContent').value = '';
+                    } else {
+                        throw new Error(data.error || data.message || 'Publishing failed');
+                    }
+                } catch (error) {
+                    const errorMsg = `Publishing failed: ${error.message}`;
+                    const statusEl = document.getElementById('accountStatus');
+                    if (statusEl) {
+                        statusEl.className = `status-message visible error`;
+                        statusEl.innerHTML = `<h3>❌ Publishing Failed</h3><div>${errorMsg}</div>`;
+                    } else {
+                        alert(errorMsg);
+                    }
+                }
+                return;
+            }
+            
+            // For Arweave/GUN publishing, password is required
+            // TODO: Add password field to publish form or prompt for it
+            if (needsPassword) {
+                const password = prompt('Enter your password to sign with your wallet:');
+                if (!password) {
+                    const statusEl = document.getElementById('accountStatus');
+                    if (statusEl) {
+                        statusEl.className = `status-message visible error`;
+                        statusEl.innerHTML = `<h3>❌ Publishing Failed</h3><div>Password required for signing</div>`;
+                    }
+                    return;
+                }
+                
+                try {
+                    // Use showStatus for consistent UI
+                    const statusEl = document.getElementById('accountStatus');
+                    if (statusEl) {
+                        statusEl.className = `status-message visible processing`;
+                        statusEl.innerHTML = `<h3>⏳ Publishing...</h3><div>Please wait while your post is submitted.</div>`;
+                    }
+                    
+                    // Build payload
+                    const accountDescription = document.getElementById('accountDescription')?.value.trim() || '';
+                    const payload = {
+                        '@context': 'temp',
+                        tags: [
+                            { name: 'Index-Method', value: 'OIP' },
+                            { name: 'Ver', value: '0.9.0' },
+                            { name: 'Content-Type', value: 'application/json' }
+                        ],
+                        fragments: [{
+                            id: crypto.randomUUID(),
+                            dataType: 'Record',
+                            recordType: 'post',
+                            records: [{
+                                basic: {
+                                    name: title,
+                                    description: accountDescription || undefined
+                                },
+                                post: {
+                                    articleText: content,
+                                    byline: accountUser?.email || 'Account User'
+                                }
+                            }]
+                        }]
+                    };
+                    
+                    // Publish with password
+                    const response = await fetch('/onion-press/api/records/publishAccount', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accountToken}`
+                        },
+                        body: JSON.stringify({ payload, destinations, password })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Build success message (same format as anonymous publishing)
+                        let successMessage = '<p>Your post has been published!</p>';
+                        if (data.transactionId) {
+                            successMessage += `<p><strong>✅ Arweave:</strong> Published</p><p><strong>Transaction ID:</strong> <span class="tx-link">${data.transactionId}</span></p>`;
+                        }
+                        if (data.destinations?.thisHost?.success || data.destinations?.thisHost?.postId) {
+                            const permalink = data.destinations?.thisHost?.permalink || data.destinations?.thisHost?.postUrl || `/wordpress/?p=${data.destinations?.thisHost?.postId}`;
+                            successMessage += `
+                                <p><strong>✅ WordPress:</strong> Published</p>
+                                <p><strong>Post ID:</strong> ${data.destinations?.thisHost?.postId || 'N/A'}</p>
+                                ${permalink ? `<p><a href="${permalink}" target="_blank">View WordPress Post →</a></p>` : ''}
+                            `;
+                        }
+                        successMessage += `<p><a href="/onion-press/" class="link">View in Browse →</a></p>`;
+                        
+                        // Use showStatus for consistent UI (use accountStatus element)
+                        const statusEl = document.getElementById('accountStatus');
+                        if (statusEl) {
+                            statusEl.className = `status-message visible success`;
+                            statusEl.innerHTML = `<h3>✅ Published Successfully!</h3><div>${successMessage}</div>`;
+                        }
+                        
+                        // Clear form
+                        document.getElementById('accountTitle').value = '';
+                        document.getElementById('accountDescription').value = '';
+                        document.getElementById('accountContent').value = '';
+                    } else {
+                        throw new Error(data.error || data.message || 'Publishing failed');
+                    }
+                } catch (error) {
+                    const errorMsg = `Publishing failed: ${error.message}`;
+                    const statusEl = document.getElementById('accountStatus');
+                    if (statusEl) {
+                        statusEl.className = `status-message visible error`;
+                        statusEl.innerHTML = `<h3>❌ Publishing Failed</h3><div>${errorMsg}</div>`;
+                    } else {
+                        alert(errorMsg);
+                    }
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // UTILITY FUNCTIONS
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        function base64urlEncode(bytes) {
+            const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+            const base64 = btoa(String.fromCharCode(...arr));
+            return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        function canonicalJson(obj) {
+            return JSON.stringify(obj, (key, value) => {
+                if (value && typeof value === 'object' && !Array.isArray(value)) {
+                    return Object.keys(value).sort().reduce((sorted, k) => {
+                        sorted[k] = value[k];
+                        return sorted;
+                    }, {});
+                }
+                return value;
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // IDENTITY MANAGEMENT (DID mode only)
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        function createIdentity(mnemonic, account = 0) {
+            // Validate mnemonic
+            if (!validateMnemonic(mnemonic, wordlist)) {
+                throw new Error('Invalid mnemonic phrase. Please enter a valid BIP-39 mnemonic.');
+            }
+
+            // Generate seed and master key
+            const seed = mnemonicToSeedSync(mnemonic);
+            const masterKey = HDKey.fromMasterSeed(seed);
+
+            // Derive signing key at m/176800'/0'/account'
+            const signingPath = `m/${OIP_PURPOSE}'/0'/${account}'`;
+            const signingKey = masterKey.derive(signingPath);
+
+            // Generate DID from master public key
+            const pubKeyHash = sha256(masterKey.publicKey);
+            const did = `did:arweave:${base64urlEncode(pubKeyHash)}`;
+
+            return {
+                did,
+                signingXpub: signingKey.publicExtendedKey,
+                signingKey: signingKey,
+                account
+            };
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // SIGNING (DID mode only)
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        function signPayload(payload, identity) {
+            // 1. Compute payload digest (canonical JSON → SHA256 → base64url)
+            const payloadBytes = canonicalJson(payload);
+            const payloadHash = sha256(new TextEncoder().encode(payloadBytes));
+            const payloadDigest = base64urlEncode(payloadHash);
+
+            // 2. Derive key index from payload digest
+            const indexInput = `oip:${payloadDigest}`;
+            const indexHash = sha256(new TextEncoder().encode(indexInput));
+            const view = new DataView(indexHash.buffer);
+            const keyIndex = view.getUint32(0, false) & 0x7FFFFFFF;
+
+            // 3. Derive child signing key
+            const childKey = identity.signingKey.deriveChild(keyIndex);
+
+            // 4. Sign the payload hash
+            const signature = secp256k1.sign(payloadHash, childKey.privateKey);
+            const signatureBase64 = base64urlEncode(signature.toCompactRawBytes());
+
+            // 5. Add signature tags to payload
+            const signedPayload = JSON.parse(JSON.stringify(payload));
+            signedPayload.tags.push({ name: 'PayloadDigest', value: payloadDigest });
+            signedPayload.tags.push({ name: 'KeyIndex', value: keyIndex.toString() });
+            signedPayload.tags.push({ name: 'CreatorSig', value: signatureBase64 });
+
+            return {
+                signedPayload,
+                debug: {
+                    payloadDigest,
+                    keyIndex,
+                    signature: signatureBase64
+                }
+            };
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // RECORD BUILDING
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        // Image dimension cache
+        let imageDimensionsCache = {};
+
+        /**
+         * Load image and extract dimensions
+         */
+        async function loadImageDimensions(imageUrl) {
+            if (!imageUrl) return null;
+            
+            // Check cache first
+            if (imageDimensionsCache[imageUrl]) {
+                return imageDimensionsCache[imageUrl];
+            }
+
+            return new Promise((resolve) => {
+                const img = new Image();
+                // Try CORS, but don't fail if it doesn't work
+                img.crossOrigin = 'anonymous';
+                
+                img.onload = () => {
+                    const dimensions = {
+                        width: img.naturalWidth,
+                        height: img.naturalHeight,
+                        contentType: 'image/jpeg' // Default, can be improved with URL parsing
+                    };
+                    // Try to detect content type from URL
+                    const urlLower = imageUrl.toLowerCase();
+                    if (urlLower.includes('.png')) dimensions.contentType = 'image/png';
+                    else if (urlLower.includes('.gif')) dimensions.contentType = 'image/gif';
+                    else if (urlLower.includes('.webp')) dimensions.contentType = 'image/webp';
+                    
+                    imageDimensionsCache[imageUrl] = dimensions;
+                    resolve(dimensions);
+                };
+                
+                img.onerror = () => {
+                    console.warn('Failed to load image for dimension extraction:', imageUrl);
+                    // Return default dimensions if image can't be loaded
+                    const dimensions = {
+                        width: 0,
+                        height: 0,
+                        contentType: 'image/jpeg'
+                    };
+                    imageDimensionsCache[imageUrl] = dimensions;
+                    resolve(dimensions);
+                };
+                
+                img.src = imageUrl;
+            });
+        }
+
+        function buildRecord(method = 'did') {
+            const isDid = method === 'did';
+            // Default to "post" for DID and Anonymous modes
+            const recordType = isDid ? (document.getElementById('recordType')?.value || 'post') : (document.getElementById('anonRecordType')?.value || 'post');
+            const title = isDid ? document.getElementById('title').value.trim() : document.getElementById('anonTitle').value.trim();
+            const description = isDid ? document.getElementById('description').value.trim() : document.getElementById('anonDescription').value.trim();
+            const content = isDid ? document.getElementById('content').value.trim() : document.getElementById('anonContent').value.trim();
+            const imageUrl = isDid ? document.getElementById('imageUrl')?.value.trim() : undefined;
+            // DID mode doesn't use byline (DID is the author), Anonymous mode does
+            const byline = isDid ? undefined : (document.getElementById('anonByline').value.trim() || 'Anonymous');
+            // DID and Anonymous modes don't use webUrl or tags
+            const webUrl = undefined;
+            const tags = undefined;
+
+            if (!title) throw new Error('Title is required');
+            if (!content) throw new Error('Content is required');
+
+            // Build the record data
+            const recordData = {
+                basic: {
+                    name: title,
+                    description: description || undefined
+                }
+            };
+
+            // Add type-specific fields
+            if (recordType === 'post') {
+                // If image URL is provided, embed it in the content as markdown
+                let articleText = content;
+                if (imageUrl) {
+                    // Embed image at the beginning of the content
+                    articleText = `![${title}](${imageUrl})\n\n${content}`;
+                }
+                
+                recordData.post = {
+                    articleText: articleText
+                };
+                // Only add byline for anonymous mode (DID mode uses DID as author)
+                if (!isDid && byline) {
+                    recordData.post.byline = byline;
+                }
+                // Don't add webUrl or tags for DID/Anonymous modes
+            } else if (recordType === 'image') {
+                recordData.image = {
+                    description: content
+                };
+            } else if (recordType === 'video') {
+                recordData.video = {
+                    description: content
+                };
+            } else if (recordType === 'audio') {
+                recordData.audio = {
+                    description: content
+                };
+            }
+
+            // Build tags array for Arweave (empty for DID/Anonymous modes)
+            const tagsList = [];
+
+            if (isDid && identity) {
+                // DID mode: Build signed payload
+                const payload = {
+                    '@context': identity.did,
+                    tags: [
+                        { name: 'Index-Method', value: 'OIP' },
+                        { name: 'Ver', value: OIP_VERSION },
+                        { name: 'Content-Type', value: 'application/json' },
+                        { name: 'Creator', value: identity.did },
+                        { name: 'Record-Type', value: 'post' } // Always "post" for DID mode
+                    ],
+                    fragments: [{
+                        id: crypto.randomUUID(),
+                        dataType: 'Record',
+                        recordType: recordType,
+                        records: [recordData]
+                    }]
+                };
+
+                // Add content tags
+                if (tagsList.length > 0) {
+                    payload.tags.push({ name: 'Tags', value: tagsList.join(',') });
+                }
+
+                return { payload, method: 'did' };
+            } else {
+                // Anonymous mode: Build unsigned payload
+                const payload = {
+                    tags: [
+                        { name: 'Index-Method', value: 'OIP' },
+                        { name: 'Ver', value: OIP_VERSION },
+                        { name: 'Content-Type', value: 'application/json' },
+                        { name: 'Record-Type', value: 'post' }, // Always "post" for Anonymous mode
+                        { name: 'Anonymous', value: 'true' }
+                    ],
+                    fragments: [{
+                        id: crypto.randomUUID(),
+                        dataType: 'Record',
+                        recordType: recordType,
+                        records: [recordData]
+                    }]
+                };
+
+                // Add content tags
+                if (tagsList.length > 0) {
+                    payload.tags.push({ name: 'Tags', value: tagsList.join(',') });
+                }
+
+                return { payload, method: 'anonymous' };
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // PUBLISHING
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        async function publishRecord() {
+            const statusEl = document.getElementById('statusMessage');
+            const publishBtn = document.getElementById('publishBtn');
+
+            try {
+                publishBtn.disabled = true;
+                showStatus('processing', '⏳ Signing and publishing...', 'Please wait while your record is signed and submitted to the blockchain.');
+
+                // Check if image URL is provided and load dimensions
+                const imageUrl = document.getElementById('imageUrl')?.value.trim();
+                if (imageUrl) {
+                    showStatus('processing', '⏳ Loading image...', 'Extracting image dimensions...');
+                    await loadImageDimensions(imageUrl);
+                }
+
+                // Build the record
+                const { payload, method } = buildRecord('did');
+                console.log('Built payload:', payload);
+
+                // Sign it client-side
+                const { signedPayload, debug } = signPayload(payload, identity);
+                console.log('Signed payload:', signedPayload);
+                console.log('Debug info:', debug);
+
+                // Use default destinations from node settings (destinations section is hidden)
+                const destinations = { ...defaultDestinations };
+
+                // Send to server (server pays Arweave fee)
+                const response = await fetch('/onion-press/api/records/publishSigned', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        payload: signedPayload,
+                        verifySignature: false, // Skip verification for new creators
+                        destinations
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || result.error || 'Publishing failed');
+                }
+
+                // Build success message based on destinations
+                let successMessage = '<p>Your record has been published!</p>';
+                
+                if (result.destinations?.arweave?.success) {
+                    successMessage += `
+                        <p><strong>✅ Arweave:</strong> Published</p>
+                        <p><strong>Transaction ID:</strong> <span class="tx-link">${result.transactionId}</span></p>
+                        <p><strong>DID:</strong> <span class="tx-link">${result.did}</span></p>
+                        <p><a href="${result.explorerUrl}" target="_blank">View on Arweave Explorer →</a></p>
+                    `;
+                } else                 if (result.destinations?.arweave) {
+                    successMessage += `<p><strong>❌ Arweave:</strong> ${result.destinations.arweave.error || 'Failed'}</p>`;
+                }
+                
+                if (result.destinations?.thisHost?.success) {
+                    const permalink = result.destinations.thisHost.permalink || result.destinations.thisHost.postUrl || `/wordpress/?p=${result.destinations.thisHost.postId}`;
+                    successMessage += `
+                        <p><strong>✅ WordPress:</strong> Published</p>
+                        <p><strong>Post ID:</strong> ${result.destinations.thisHost.postId || 'N/A'}</p>
+                        ${permalink ? `<p><a href="${permalink}" target="_blank">View WordPress Post →</a></p>` : ''}
+                    `;
+                } else if (result.destinations?.thisHost) {
+                    successMessage += `<p><strong>❌ WordPress:</strong> ${result.destinations.thisHost.error || 'Failed'}</p>`;
+                }
+                
+                showStatus('success', '✅ Published Successfully!', successMessage);
+
+                // Clear form
+                document.getElementById('title').value = '';
+                document.getElementById('description').value = '';
+                document.getElementById('imageUrl').value = '';
+                document.getElementById('content').value = '';
+                // Hide image preview
+                const imagePreviewEl = document.getElementById('imagePreview');
+                if (imagePreviewEl) imagePreviewEl.style.display = 'none';
+                // webUrl and tags are hidden for DID mode
+
+            } catch (error) {
+                console.error('Publish error:', error);
+                showStatus('error', '❌ Publishing Failed', error.message);
+            } finally {
+                publishBtn.disabled = false;
+            }
+        }
+
+        async function publishAnonymous() {
+            const statusEl = document.getElementById('statusMessage');
+            const publishBtn = document.getElementById('anonPublishBtn');
+
+            try {
+                publishBtn.disabled = true;
+                showStatus('processing', '⏳ Publishing anonymously...', 'Please wait while your record is submitted.');
+
+                // Build the record (unsigned)
+                const { payload } = buildRecord('anonymous');
+                console.log('Built anonymous payload:', payload);
+
+                // Get selected destinations (use defaults if admin section is hidden)
+                const destinationsSection = document.getElementById('anonDestinationsSection');
+                let destinations;
+                
+                if (destinationsSection && !destinationsSection.classList.contains('hidden')) {
+                    // Admin mode: use selected destinations
+                    destinations = {
+                        arweave: document.getElementById('anonDestArweave')?.checked || false,
+                        gun: document.getElementById('anonDestGun')?.checked || false,
+                        thisHost: document.getElementById('anonDestThisHost')?.checked || false
+                    };
+                } else {
+                    // Non-admin mode: default to thisHost only
+                    destinations = {
+                        arweave: false,
+                        gun: false,
+                        thisHost: true
+                    };
+                }
+
+                // Send to server (server pays Arweave fee, no signature)
+                const response = await fetch('/onion-press/api/records/publishAnonymous', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        payload,
+                        destinations
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || result.error || 'Publishing failed');
+                }
+
+                // Build success message based on destinations
+                let successMessage = '<p>Your anonymous record has been published!</p>';
+                
+                if (result.destinations?.arweave?.success) {
+                    successMessage += `
+                        <p><strong>✅ Arweave:</strong> Published</p>
+                        <p><strong>Transaction ID:</strong> <span class="tx-link">${result.transactionId}</span></p>
+                        <p><a href="${result.explorerUrl}" target="_blank">View on Arweave Explorer →</a></p>
+                    `;
+                } else if (result.destinations?.arweave) {
+                    successMessage += `<p><strong>❌ Arweave:</strong> ${result.destinations.arweave.error || 'Failed'}</p>`;
+                }
+                
+                if (result.destinations?.thisHost?.success) {
+                    const permalink = result.destinations.thisHost.permalink || result.destinations.thisHost.postUrl || `/wordpress/?p=${result.destinations.thisHost.postId}`;
+                    successMessage += `
+                        <p><strong>✅ WordPress:</strong> Published</p>
+                        <p><strong>Post ID:</strong> ${result.destinations.thisHost.postId || 'N/A'}</p>
+                        ${permalink ? `<p><a href="${permalink}" target="_blank">View WordPress Post →</a></p>` : ''}
+                    `;
+                } else if (result.destinations?.thisHost) {
+                    successMessage += `<p><strong>❌ WordPress:</strong> ${result.destinations.thisHost.error || 'Failed'}</p>`;
+                }
+                
+                showStatus('success', '✅ Published Successfully!', successMessage);
+
+                // Clear form
+                document.getElementById('anonTitle').value = '';
+                document.getElementById('anonDescription').value = '';
+                document.getElementById('anonContent').value = '';
+                // anonWebUrl and anonTags are hidden for Anonymous mode
+
+            } catch (error) {
+                console.error('Publish error:', error);
+                showStatus('error', '❌ Publishing Failed', error.message);
+            } finally {
+                publishBtn.disabled = false;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // UI HELPERS
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        function showStatus(type, title, message) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.className = `status-message visible ${type}`;
+            statusEl.innerHTML = `<h3>${title}</h3><div>${message}</div>`;
+        }
+
+        function updatePublishButton() {
+            const publishBtn = document.getElementById('publishBtn');
+            const title = document.getElementById('title').value.trim();
+            const content = document.getElementById('content').value.trim();
+
+            publishBtn.disabled = !identity || !title || !content;
+        }
+
+        function updateAnonymousPublishButton() {
+            const publishBtn = document.getElementById('anonPublishBtn');
+            const title = document.getElementById('anonTitle').value.trim();
+            const content = document.getElementById('anonContent').value.trim();
+
+            publishBtn.disabled = !title || !content;
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // EVENT HANDLERS
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        // Load default destinations from server
+        async function loadDefaultDestinations() {
+            try {
+                const response = await fetch('/onion-press/api/destinations/defaults');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.destinations) {
+                        defaultDestinations = { ...data.destinations };
+                        console.log('Loaded default destinations:', defaultDestinations);
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to load default destinations:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Load default destinations first
+            await loadDefaultDestinations();
+            
+            // Set up image preview handler
+            const imageUrlInput = document.getElementById('imageUrl');
+            const imagePreview = document.getElementById('imagePreview');
+            const imagePreviewImg = document.getElementById('imagePreviewImg');
+            const imageDimensions = document.getElementById('imageDimensions');
+            
+            if (imageUrlInput && imagePreview && imagePreviewImg && imageDimensions) {
+                imageUrlInput.addEventListener('input', async () => {
+                    const url = imageUrlInput.value.trim();
+                    if (url) {
+                        try {
+                            // Show preview
+                            imagePreviewImg.src = url;
+                            imagePreview.style.display = 'block';
+                            imageDimensions.textContent = 'Loading dimensions...';
+                            
+                            // Load dimensions
+                            const dims = await loadImageDimensions(url);
+                            if (dims && dims.width > 0 && dims.height > 0) {
+                                imageDimensions.textContent = `${dims.width} × ${dims.height}px`;
+                            } else {
+                                imageDimensions.textContent = 'Dimensions unavailable';
+                            }
+                        } catch (error) {
+                            console.warn('Failed to load image preview:', error);
+                            imagePreview.style.display = 'block';
+                            imageDimensions.textContent = 'Preview unavailable';
+                        }
+                    } else {
+                        imagePreview.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Check admin status and update UI
+            await checkAdminStatus();
+            // Load host info for both forms
+            try {
+                const response = await fetch('/onion-press/api/host-info');
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('thisHostName').textContent = data.name;
+                    document.getElementById('thisHostUrl').textContent = data.url;
+                    document.getElementById('anonThisHostName').textContent = data.name;
+                    document.getElementById('anonThisHostUrl').textContent = data.url;
+                }
+            } catch (error) {
+                console.warn('Failed to load host info:', error);
+            }
+
+            // Check TOR status
+            try {
+                const torResponse = await fetch('/onion-press/api/tor/status');
+                if (torResponse.ok) {
+                    const torStatus = await torResponse.json();
+                    const torIndicator = document.querySelector('#torStatus .tor-indicator');
+                    if (torStatus.connected) {
+                        torIndicator.classList.add('connected');
+                        torIndicator.classList.remove('disconnected');
+                    } else {
+                        torIndicator.classList.remove('connected');
+                        torIndicator.classList.add('disconnected');
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to check TOR status:', error);
+            }
+
+            // DID Form handlers
+            const mnemonicEl = document.getElementById('mnemonic');
+            const generateBtn = document.getElementById('generateMnemonicBtn');
+            const loadBtn = document.getElementById('loadIdentityBtn');
+            const publishBtn = document.getElementById('publishBtn');
+            const identitySection = document.getElementById('identitySection');
+            const identityInfo = document.getElementById('identityInfo');
+            const displayDid = document.getElementById('displayDid');
+            const displayXpub = document.getElementById('displayXpub');
+
+            // Generate test mnemonic
+            generateBtn.addEventListener('click', () => {
+                const mnemonic = generateMnemonic(wordlist, 256); // 24 words
+                mnemonicEl.value = mnemonic;
+            });
+
+            // Load identity from mnemonic
+            loadBtn.addEventListener('click', () => {
+                try {
+                    const mnemonic = mnemonicEl.value.trim().toLowerCase();
+                    if (!mnemonic) {
+                        alert('Please enter a mnemonic phrase');
+                        return;
+                    }
+
+                    identity = createIdentity(mnemonic);
+                    
+                    // Update UI
+                    identitySection.classList.add('active');
+                    identityInfo.classList.remove('hidden');
+                    displayDid.textContent = identity.did;
+                    displayXpub.textContent = identity.signingXpub;
+                    
+                    updatePublishButton();
+                    
+                    console.log('Identity loaded:', identity.did);
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                }
+            });
+
+            // Publish record (DID mode)
+            publishBtn.addEventListener('click', publishRecord);
+
+            // Update publish button state on form changes (DID)
+            document.getElementById('title').addEventListener('input', updatePublishButton);
+            document.getElementById('content').addEventListener('input', updatePublishButton);
+
+            // Anonymous Form handlers
+            const anonPublishBtn = document.getElementById('anonPublishBtn');
+            anonPublishBtn.addEventListener('click', publishAnonymous);
+            
+            // Account login button
+            const accountLoginBtn = document.getElementById('accountLoginBtn');
+            if (accountLoginBtn) {
+                accountLoginBtn.addEventListener('click', accountLogin);
+            }
+            
+            // Account publish button
+            const accountPublishBtn = document.getElementById('accountPublishBtn');
+            if (accountPublishBtn) {
+                accountPublishBtn.addEventListener('click', publishAccount);
+            }
+
+            // Update publish button state on form changes (Anonymous)
+            document.getElementById('anonTitle').addEventListener('input', updateAnonymousPublishButton);
+            document.getElementById('anonContent').addEventListener('input', updateAnonymousPublishButton);
+
+            // Destination card selection styling
+            document.querySelectorAll('.destination-card').forEach(card => {
+                const checkbox = card.querySelector('input[type="checkbox"]');
+                checkbox.addEventListener('change', () => {
+                    card.classList.toggle('selected', checkbox.checked);
+                });
+            });
+        });
+
+        /**
+         * Check admin status and update UI
+         */
+        async function checkAdminStatus() {
+            try {
+                // Check if user is logged in
+                const token = localStorage.getItem('onionpress_token');
+                if (!token) {
+                    // Not logged in, hide admin-only sections
+                    document.querySelectorAll('.admin-only').forEach(el => {
+                        el.classList.add('hidden');
+                    });
+                    return;
+                }
+
+                // Check WordPress admin status
+                const response = await fetch('/onion-press/api/user/admin-status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const isAdmin = data.isWordPressAdmin || false;
+
+                    // Show/hide admin-only sections
+                    document.querySelectorAll('.admin-only').forEach(el => {
+                        if (isAdmin) {
+                            el.classList.remove('hidden');
+                        } else {
+                            el.classList.add('hidden');
+                        }
+                    });
+                }
+            } catch (error) {
+                console.warn('Failed to check admin status:', error);
+                // Hide admin sections on error
+                document.querySelectorAll('.admin-only').forEach(el => {
+                    el.classList.add('hidden');
+                });
+            }
+        }
+
+        // Make functions available globally
+        window.selectMethod = selectMethod;
+        window.showMethodSelection = showMethodSelection;
+        window.accountLogin = accountLogin;
+        window.publishAccount = publishAccount;
+    </script>
+    <script src="/onion-press/js/theme.js"></script>
+</body>
+</html>

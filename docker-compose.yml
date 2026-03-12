@@ -1,0 +1,204 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# OIP LITE - Docker Compose
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Services:
+#   oip          (port ${PORT:-3005})      - Core OIP node
+#   gun-relay    (port ${GUN_RELAY_PORT:-8765}) - GUN peer-to-peer relay
+#   elasticsearch (port ${ELASTICSEARCH_PORT:-9200}) - Search & indexing
+#   kibana       (port ${KIBANA_PORT:-5601}) - ES dashboard
+#   ipfs         (port ${IPFS_API_PORT:-5001}) - Distributed file storage
+#   ngrok        (port ${NGROK_DASHBOARD_PORT:-4040}) - Public tunnel
+#
+# PORT CONFIGURATION (set via .env):
+#   PORT                        Main OIP API port (default: 3005)
+#   ELASTICSEARCH_PORT          Elasticsearch HTTP (default: 9200)
+#   ELASTICSEARCH_TRANSPORT_PORT Elasticsearch transport (default: 9300)
+#   KIBANA_PORT                 Kibana dashboard (default: 5601)
+#   GUN_RELAY_PORT              GUN relay (default: 8765)
+#   IPFS_API_PORT               IPFS API (default: 5001)
+#   IPFS_GATEWAY_PORT           IPFS gateway (default: 8080)
+#   NGROK_DASHBOARD_PORT        Ngrok dashboard (default: 4040)
+#   DEBUG_PORT                  Node.js debug (default: 9229)
+#
+# QUICK START:
+#   cp .env.example .env   # then edit with your keys
+#   make up
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # ELASTICSEARCH - Search & Indexing
+  # ════════════════════════════════════════════════════════════════════════════
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+      - xpack.security.enabled=false
+      - logger.level=WARN
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ${ELASTICSEARCH_DATA_PATH:-./elasticsearch_data}:/usr/share/elasticsearch/data
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+      - "${ELASTICSEARCH_TRANSPORT_PORT:-9300}:9300"
+    networks:
+      - oip-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # KIBANA - Elasticsearch Dashboard
+  # ════════════════════════════════════════════════════════════════════════════
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.17.0
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "${KIBANA_PORT:-5601}:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - oip-network
+    restart: unless-stopped
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # GUN RELAY - Private Record P2P Storage
+  # ════════════════════════════════════════════════════════════════════════════
+  gun-relay:
+    image: node:18-alpine
+    working_dir: /app
+    command: sh -c "npm init -y >/dev/null 2>&1 && npm i gun && node gun-relay-server.js"
+    ports:
+      - "${GUN_RELAY_PORT:-8765}:8765"
+    volumes:
+      - gundata:/app/data
+      - ./gun-relay-server.js:/app/gun-relay-server.js:ro
+    environment:
+      - GUN_PEERS=${GUN_EXTERNAL_PEERS:-}
+      - GUN_ENV=production
+      - GUN_SYNC_ENABLED=true
+    networks:
+      - oip-network
+    restart: unless-stopped
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # IPFS - Distributed File Storage
+  # ════════════════════════════════════════════════════════════════════════════
+  ipfs:
+    image: ipfs/kubo:latest
+    environment:
+      - IPFS_PROFILE=server
+    ports:
+      - "${IPFS_API_PORT:-5001}:5001"
+      - "${IPFS_GATEWAY_PORT:-8080}:8080"
+    volumes:
+      - ipfsdata:/data/ipfs
+    networks:
+      - oip-network
+    restart: unless-stopped
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # OIP - Core Node
+  # ════════════════════════════════════════════════════════════════════════════
+  oip:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "${PORT:-3005}:${PORT:-3005}"
+      - "${DEBUG_PORT:-9229}:9229"
+    environment:
+      - NODE_ENV=production
+      - PORT=${PORT:-3005}
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
+      - GUN_PEERS=http://gun-relay:8765/gun
+      - GUN_SYNC_ENABLED=${GUN_SYNC_ENABLED:-true}
+      - IPFS_API_URL=http://ipfs:5001
+      - JWT_SECRET=${JWT_SECRET}
+      - ARWEAVE_KEY_FILE=${ARWEAVE_KEY_FILE}
+      - TURBO_URL=${TURBO_URL:-https://turbo.ardrive.io}
+      - USE_LOCAL_ARIO_GATEWAY=${USE_LOCAL_ARIO_GATEWAY:-false}
+      - LOCAL_ARIO_GATEWAY_ADDRESS=${LOCAL_ARIO_GATEWAY_ADDRESS:-ario-gateway:4000}
+      - PUBLIC_API_BASE_URL=${PUBLIC_API_BASE_URL:-}
+      - NGROK_DOMAIN=${NGROK_DOMAIN:-}
+      - ARWEAVE_SYNC_ENABLED=${ARWEAVE_SYNC_ENABLED:-true}
+      - GUN_SYNC_INTERVAL=${GUN_SYNC_INTERVAL:-300000}
+      - GUN_EXTERNAL_PEERS=${GUN_EXTERNAL_PEERS:-}
+      - GUN_SYNC_TRUSTED_NODES=${GUN_SYNC_TRUSTED_NODES:-}
+      - RECORD_TYPE_INDEX_MODE=${RECORD_TYPE_INDEX_MODE:-all}
+      - CUSTOM_PUBLIC_PATH=${CUSTOM_PUBLIC_PATH:-false}
+      - MEMORY_RESTART_THRESHOLD_GB=${MEMORY_RESTART_THRESHOLD_GB:-36}
+      - NODE_OPTIONS=${NODE_OPTIONS:---max-old-space-size=4096}
+      - TZ=${TZ:-America/Los_Angeles}
+      - SERVER_CREATOR_MNEMONIC=${SERVER_CREATOR_MNEMONIC:-}
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      gun-relay:
+        condition: service_started
+    volumes:
+      - ./data:/usr/src/app/data
+      - ./wallets:/usr/src/app/wallets
+      - ./public:/usr/src/app/public:ro
+    networks:
+      - oip-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -f http://localhost:${PORT:-3005}/health || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # NGROK - Public Tunnel
+  # Requires: NGROK_AUTH_TOKEN and NGROK_DOMAIN in .env
+  # Dashboard: http://localhost:${NGROK_DASHBOARD_PORT:-4040}
+  # ════════════════════════════════════════════════════════════════════════════
+  ngrok:
+    image: ngrok/ngrok:latest
+    command: http --domain=${NGROK_DOMAIN:-} oip:${PORT:-3005}
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTH_TOKEN:-}
+    depends_on:
+      - oip
+    ports:
+      - "${NGROK_DASHBOARD_PORT:-4040}:4040"
+    networks:
+      - oip-network
+    restart: unless-stopped
+    profiles:
+      - ngrok
+
+# ════════════════════════════════════════════════════════════════════════════
+# VOLUMES
+# ════════════════════════════════════════════════════════════════════════════
+volumes:
+  gundata:
+    name: ${COMPOSE_PROJECT_NAME:-oip-lite}_gundata
+  ipfsdata:
+    name: ${COMPOSE_PROJECT_NAME:-oip-lite}_ipfsdata
+
+# ════════════════════════════════════════════════════════════════════════════
+# NETWORKS
+# ════════════════════════════════════════════════════════════════════════════
+networks:
+  oip-network:
+    name: ${COMPOSE_PROJECT_NAME:-oip-lite}_oip-network
+    driver: bridge

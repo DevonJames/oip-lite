@@ -1,0 +1,20 @@
+{
+    "Title": "basic.name",
+    "Description": "basic.description",
+    "Creator": "image.creator",
+    "MimeType": "image.contentType",
+    "Height": "image.height",
+    "Width": "image.width",
+    "FileSize": "image.size",
+    "CanonicalUrl": "associatedURLOnWeb.url",
+    "AlternateUrls": "associatedURLOnWeb",
+    "ImageBittorrentAddress": "image.bittorrentAddress",
+    "ImageIpfsAddress": "image.ipfsAddress",
+    "ImageArweaveAddress": "image.arweaveAddress",
+    "PublishedOnUtcEpoch": "basic.date",
+    "Tags": "basic.tagItems",
+    "Language": "basic.language",
+    "NSFW": "basic.nsfw",
+    "ReplyTo": "basic.replyTo",
+    "Citations": "basic.citations"  
+}

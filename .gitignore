@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Environment (contains secrets)
+.env
+env
+
+# Arweave wallet (contains private key)
+config/arweave-keyfile.json
+config/google-service-account-key.json
+wallets/
+
+# Elasticsearch data
+elasticsearch_data/
+ario_gateway_data/
+
+# Media uploads
+data/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+docker-compose.override.yml
+
+.env
+env
+data/
+wallets/
+elasticsearch_data/
+.DS_Store
+node_modules/

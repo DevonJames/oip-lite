@@ -1,0 +1,78 @@
+{
+  "name": "oip-daemon-service",
+  "version": "1.0.0",
+  "description": "OIP Daemon Service - Core library infrastructure for blockchain indexing, storage, and media distribution",
+  "main": "index.js",
+  "scripts": {
+    "start": "node --expose-gc index.js --keepDBUpToDate 15 600",
+    "start:dev": "node --expose-gc index.js",
+    "test": "mocha test/daemon/**/*.js --timeout 30000"
+  },
+  "author": "OIP",
+  "license": "ISC",
+  "dependencies": {
+    "@elastic/elasticsearch": "^8.17.0",
+    "@noble/curves": "^1.3.0",
+    "@noble/hashes": "^1.3.3",
+    "@scure/bip32": "^1.3.3",
+    "@scure/bip39": "^1.2.2",
+    "arweave": "^1.15.5",
+    "arweave-graphql": "^0.0.5",
+    "axios": "^1.7.9",
+    "bcrypt": "^5.1.1",
+    "bip32": "^4.0.0",
+    "bip39": "^3.1.0",
+    "body-parser": "^1.20.2",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "create-torrent": "^4.4.6",
+    "form-data": "^4.0.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "gun": "^0.2020.1240",
+    "ipfs-http-client": "^49.0.4",
+    "jsonwebtoken": "^9.0.2",
+    "mime-types": "^2.1.35",
+    "minimist": "^1.2.8",
+    "multer": "^2.0.2",
+    "node-fetch": "^2.7.0",
+    "parse-torrent": "^9.1.5",
+    "sharp": "^0.33.5",
+    "socket.io": "^4.8.1",
+    "tiny-secp256k1": "^2.2.3",
+    "uuid": "^9.0.1",
+    "webtorrent": "^1.9.7",
+    "ws": "^8.18.1",
+    "graphql-request": "^6.1.0",
+    "@ardrive/turbo-sdk": "^1.22.1",
+    "arbundles": "^0.11.0",
+    "arweave-stream-tx": "^1.2.2",
+    "tmp-promise": "^3.0.3",
+    "@bitcoinerlab/secp256k1": "^1.2.0",
+    "secp256k1": "^5.0.1",
+    "semver": "^7.6.0",
+    "bitcoinjs-lib": "^6.1.7",
+    "base64url": "^3.0.1",
+    "progress": "^2.0.3",
+    "progress-stream": "^2.0.0",
+    "http-proxy-middleware": "^3.0.0"
+  },
+  "optionalDependencies": {},
+  "devDependencies": {
+    "chai": "^4.3.10",
+    "mocha": "^10.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "comments": {
+    "excluded": [
+      "AI/LLM packages (gpt-tokenizer) - in alexandria",
+      "Heavy media processing (canvas, fluent-ffmpeg) - in alexandria", 
+      "Web scraping (puppeteer, firecrawl) - in alexandria (cheerio is in daemon for publish)",
+      "Voice packages - in alexandria",
+      "Image generation - in alexandria"
+    ]
+  }
+}
+

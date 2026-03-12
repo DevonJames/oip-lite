@@ -1,0 +1,23 @@
+{ 
+        "Title": "basic.name",
+        "Description": "basic.description",
+        "Creator": "video.creator",
+        "Filename": "video.filename",
+        "ContentType": "video.contentType",
+        "CanonicalUrl": "associatedURLOnWeb.url",
+        "AlternateUrls": "associatedURLOnWeb",
+        "VideoBittorrentAddress": "video.bittorrentAddress",
+        "VideoIpfsAddress": "video.ipfsAddress",
+        "VideoArweaveAddress": "video.arweaveAddress",
+        "Thumbnails": "video.thumbnails",
+        "Size": "video.size",
+        "Width": "video.width",
+        "Height": "video.height",
+        "Duration": "video.duration",
+        "PublishedOnUtcEpoch": "basic.date",
+        "Tags": "basic.tagItems",
+        "Language": "basic.language",
+        "NSFW": "basic.nsfw",
+        "ReplyTo": "basic.replyTo",
+        "Citations": "basic.citations"
+}

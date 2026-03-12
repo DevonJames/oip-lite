@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 OIP v0.9 Creator Registration</title>
+    <link rel="stylesheet" href="onion-press/css/onion-press.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent-step-1: #f472b6;  /* Pink - Identity */
+            --accent-step-2: #fb923c;  /* Orange - Verification Method */
+            --accent-step-3: #60a5fa;  /* Blue - DID Document */
+            --accent-step-4: #34d399;  /* Green - Social Media */
+            --accent-step-5: #a78bfa;  /* Purple - Communication */
+            --accent-step-6: #22d3ee;  /* Cyan - Review & Publish */
+            --font-mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+        }
+
+        .registration-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+        }
+
+        .registration-header {
+            text-align: center;
+            margin-bottom: var(--spacing-2xl);
+            padding-bottom: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .registration-header h1 {
+            font-size: 2rem;
+            margin-bottom: var(--spacing-sm);
+            background: linear-gradient(135deg, var(--accent-step-1), var(--accent-step-6));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .step-progress {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-2xl);
+            position: relative;
+        }
+
+        .step-progress::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--border-color);
+        }
+
+        .step-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            transition: var(--transition-normal);
+        }
+
+        .step-indicator.active .step-number {
+            transform: scale(1.1);
+        }
+
+        .step-indicator[data-step="1"].active .step-number,
+        .step-indicator[data-step="1"].completed .step-number { background: var(--accent-step-1); border-color: var(--accent-step-1); }
+        .step-indicator[data-step="2"].active .step-number,
+        .step-indicator[data-step="2"].completed .step-number { background: var(--accent-step-2); border-color: var(--accent-step-2); }
+        .step-indicator[data-step="3"].active .step-number,
+        .step-indicator[data-step="3"].completed .step-number { background: var(--accent-step-3); border-color: var(--accent-step-3); }
+        .step-indicator[data-step="4"].active .step-number,
+        .step-indicator[data-step="4"].completed .step-number { background: var(--accent-step-4); border-color: var(--accent-step-4); }
+        .step-indicator[data-step="5"].active .step-number,
+        .step-indicator[data-step="5"].completed .step-number { background: var(--accent-step-5); border-color: var(--accent-step-5); }
+        .step-indicator[data-step="6"].active .step-number,
+        .step-indicator[data-step="6"].completed .step-number { background: var(--accent-step-6); border-color: var(--accent-step-6); }
+
+        .step-label {
+            margin-top: var(--spacing-sm);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: center;
+            max-width: 80px;
+        }
+
+        .step-indicator.active .step-label {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .step-content {
+            display: none;
+        }
+
+        .step-content.active {
+            display: block;
+        }
+
+        .step-section {
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .step-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            font-family: var(--font-mono);
+            margin-right: var(--spacing-sm);
+        }
+
+        .step-badge.step-1 { background: var(--accent-step-1); color: #000; }
+        .step-badge.step-2 { background: var(--accent-step-2); color: #000; }
+        .step-badge.step-3 { background: var(--accent-step-3); color: #000; }
+        .step-badge.step-4 { background: var(--accent-step-4); color: #000; }
+        .step-badge.step-5 { background: var(--accent-step-5); color: #000; }
+        .step-badge.step-6 { background: var(--accent-step-6); color: #000; }
+
+        .form-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: var(--spacing-sm);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: var(--spacing-sm);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: var(--spacing-xs);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .repeated-field {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .repeated-field-item {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .repeated-field-item input {
+            flex: 1;
+        }
+
+        .add-field-btn {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .step-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .nav-btn {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border: none;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .nav-btn.prev {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .nav-btn.next,
+        .nav-btn.approve {
+            background: var(--accent-primary);
+            color: #000;
+        }
+
+        .nav-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .identity-card {
+            background: var(--bg-tertiary);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .identity-row {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--spacing-sm) 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .identity-row:last-child {
+            border-bottom: none;
+        }
+
+        .identity-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .identity-value {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            word-break: break-all;
+            color: var(--text-primary);
+        }
+
+        .alert {
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .alert.info {
+            background: rgba(34, 211, 238, 0.1);
+            border: 1px solid var(--accent-step-6);
+            color: var(--text-primary);
+        }
+
+        .alert.warning {
+            background: rgba(251, 146, 60, 0.1);
+            border: 1px solid var(--accent-step-2);
+            color: var(--text-primary);
+        }
+
+        .json-display {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-md);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .loading {
+            text-align: center;
+            padding: var(--spacing-xl);
+            color: var(--text-secondary);
+        }
+
+        .template-field-info {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: var(--spacing-xs);
+        }
+    </style>
+</head>
+<body>
+    <main class="registration-container">
+        <div class="registration-header">
+            <h1>🔐 OIP v0.9 Creator Registration</h1>
+            <p>Register yourself as a creator using DID-based identity</p>
+        </div>
+
+        <div class="step-progress">
+            <div class="step-indicator active" data-step="1" onclick="goToStep(1)">
+                <div class="step-number">1</div>
+                <div class="step-label">Identity</div>
+            </div>
+            <div class="step-indicator" data-step="2" onclick="goToStep(2)">
+                <div class="step-number">2</div>
+                <div class="step-label">Verification Method</div>
+            </div>
+            <div class="step-indicator" data-step="3" onclick="goToStep(3)">
+                <div class="step-number">3</div>
+                <div class="step-label">DID Document</div>
+            </div>
+            <div class="step-indicator" data-step="4" onclick="goToStep(4)">
+                <div class="step-number">4</div>
+                <div class="step-label">Social Media</div>
+            </div>
+            <div class="step-indicator" data-step="5" onclick="goToStep(5)">
+                <div class="step-number">5</div>
+                <div class="step-label">Communication</div>
+            </div>
+            <div class="step-indicator" data-step="6" onclick="goToStep(6)">
+                <div class="step-number">6</div>
+                <div class="step-label">Review & Publish</div>
+            </div>
+        </div>
+
+        <!-- Step 1: Identity -->
+        <div id="step1" class="step-content active">
+            <div class="step-section">
+                <h2><span class="step-badge step-1">1</span> Creator Identity</h2>
+                
+                <div class="alert warning">
+                    <strong>⚠️ Security Warning</strong><br>
+                    Your mnemonic is your identity and signing key. It is processed entirely in your browser and never sent to any server. 
+                    Keep it secure and never share it!
+                </div>
+
+                <div class="form-group">
+                    <label for="mnemonic">BIP-39 Mnemonic (12 or 24 words)</label>
+                    <textarea id="mnemonic" rows="3" placeholder="Enter your mnemonic phrase here, or click 'Generate Test Mnemonic' below..."></textarea>
+                    <small>This mnemonic will be used to derive your DID and signing keys</small>
+                </div>
+
+                <div style="display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-lg);">
+                    <button id="generateMnemonicBtn" class="nav-btn prev">🎲 Generate Test Mnemonic</button>
+                    <button id="loadIdentityBtn" class="nav-btn next">🔑 Load Identity</button>
+                </div>
+
+                <div id="identityInfo" class="identity-card hidden">
+                    <h3>Your Identity</h3>
+                    <div class="identity-row">
+                        <span class="identity-label">DID</span>
+                        <span class="identity-value" id="displayDid">-</span>
+                    </div>
+                    <div class="identity-row">
+                        <span class="identity-label">Signing xpub</span>
+                        <span class="identity-value" id="displayXpub">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-navigation">
+                <div></div>
+                <button class="nav-btn next" onclick="processStep1()" id="step1NextBtn" disabled>
+                    Continue to Verification Method →
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Verification Method -->
+        <div id="step2" class="step-content">
+            <div class="step-section">
+                <h2><span class="step-badge step-2">2</span> Verification Method</h2>
+                
+                <div class="alert info">
+                    <strong>All fields are auto-filled with OIP v0.9 spec defaults.</strong><br>
+                    Fields like <code>vmId</code> (set to "#sign"), <code>vmType</code>, <code>controller</code>, <code>xpub</code>, 
+                    <code>derivationSubPurpose</code>, <code>derivationAccount</code>, <code>derivationPathPrefix</code>, 
+                    <code>leafIndexPolicy</code>, <code>leafHardened</code>, and <code>validFromBlock</code> are automatically set 
+                    according to the OIP v0.9 specification and are hidden from this form. No user input is required for this step.
+                </div>
+
+                <div id="verificationMethodForm">
+                    <div class="loading">Loading template fields...</div>
+                </div>
+            </div>
+
+            <div class="step-navigation">
+                <button class="nav-btn prev" onclick="goToStep(1)">← Back to Identity</button>
+                <button class="nav-btn next" onclick="processStep2()">Continue to DID Document →</button>
+            </div>
+        </div>
+
+        <!-- Step 3: DID Document -->
+        <div id="step3" class="step-content">
+            <div class="step-section">
+                <h2><span class="step-badge step-3">3</span> DID Document</h2>
+                
+                <div class="alert info">
+                    <strong>Core fields are auto-filled with OIP v0.9 spec defaults.</strong><br>
+                    Fields like <code>did</code>, <code>controller</code>, <code>keyBindingPolicy</code>, <code>authentication</code> (set to "#sign"), 
+                    and <code>assertionMethod</code> (set to "#sign") are automatically set according to the OIP v0.9 specification and are hidden from this form. 
+                    The <code>verificationMethod</code> field will be automatically populated after your Verification Method is published.
+                    You can fill in optional profile fields like <code>oipHandle</code>, <code>oipName</code>, <code>oipSurname</code>, etc.
+                </div>
+
+                <div id="didDocumentForm">
+                    <div class="loading">Loading template fields...</div>
+                </div>
+            </div>
+
+            <div class="step-navigation">
+                <button class="nav-btn prev" onclick="goToStep(2)">← Back to Verification Method</button>
+                <button class="nav-btn next" onclick="processStep3()">Continue to Social Media →</button>
+            </div>
+        </div>
+
+        <!-- Step 4: Social Media -->
+        <div id="step4" class="step-content">
+            <div class="step-section">
+                <h2><span class="step-badge step-4">4</span> Social Media</h2>
+                
+                <div class="alert info">
+                    Optionally link your social media profiles. This information will be publicly available.
+                </div>
+
+                <div id="socialMediaForm">
+                    <div class="loading">Loading template fields...</div>
+                </div>
+            </div>
+
+            <div class="step-navigation">
+                <button class="nav-btn prev" onclick="goToStep(3)">← Back to DID Document</button>
+                <button class="nav-btn next" onclick="processStep4()">Continue to Communication →</button>
+            </div>
+        </div>
+
+        <!-- Step 5: Communication -->
+        <div id="step5" class="step-content">
+            <div class="step-section">
+                <h2><span class="step-badge step-5">5</span> Communication</h2>
+                
+                <div class="alert info">
+                    Optionally add communication channels. This information will be publicly available.
+                </div>
+
+                <div id="communicationForm">
+                    <div class="loading">Loading template fields...</div>
+                </div>
+            </div>
+
+            <div class="step-navigation">
+                <button class="nav-btn prev" onclick="goToStep(4)">← Back to Social Media</button>
+                <button class="nav-btn next" onclick="processStep5()">Review & Publish →</button>
+            </div>
+        </div>
+
+        <!-- Step 6: Review & Publish -->
+        <div id="step6" class="step-content">
+            <div class="step-section">
+                <h2><span class="step-badge step-6">6</span> Review & Publish</h2>
+                
+                <div class="alert info">
+                    Review all your records before publishing. Each record will be signed with your identity and published to Arweave.
+                </div>
+
+                <h3>Records to Publish</h3>
+                <div id="reviewRecords" class="json-display">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div style="margin-top: var(--spacing-lg);">
+                    <label>
+                        <input type="checkbox" id="confirmPublish">
+                        I confirm that all information is correct and I want to publish these records to the blockchain
+                    </label>
+                </div>
+            </div>
+
+            <div class="step-navigation">
+                <button class="nav-btn prev" onclick="goToStep(5)">← Back to Communication</button>
+                <button class="nav-btn approve" id="publishBtn" onclick="publishRecords()" disabled>
+                    ✅ Publish All Records
+                </button>
+            </div>
+
+            <div id="publishResult" class="hidden" style="margin-top: var(--spacing-lg);"></div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = window.location.origin;
+        
+        let state = {
+            identity: null,
+            templates: {},
+            records: {
+                didVerificationMethod: null,
+                didDocument: null,
+                socialMedia: null,
+                communication: null
+            },
+            socialMediaEntries: [],
+            communicationEntries: []
+        };
+
+        // Load templates on page load
+        async function loadTemplates() {
+            try {
+                // Try to load all templates first
+                const response = await fetch(`${API_BASE}/api/templates`);
+                const data = await response.json();
+                
+                if (data.templates) {
+                    const v09Templates = ['didVerificationMethod', 'didDocument', 'socialMedia', 'communication'];
+                    
+                    data.templates.forEach(template => {
+                        const templateName = template.data?.template || template.data?.recordType;
+                        if (v09Templates.includes(templateName)) {
+                            state.templates[templateName] = template;
+                        }
+                    });
+
+                    // Check if we found all required templates
+                    const missingTemplates = v09Templates.filter(name => !state.templates[name]);
+                    if (missingTemplates.length > 0) {
+                        console.warn('Missing templates:', missingTemplates);
+                        // Try to query by template name
+                        for (const templateName of missingTemplates) {
+                            try {
+                                const templateResponse = await fetch(`${API_BASE}/api/templates/${templateName}`);
+                                if (templateResponse.ok) {
+                                    const templateData = await templateResponse.json();
+                                    if (templateData.template) {
+                                        state.templates[templateName] = templateData.template;
+                                    }
+                                }
+                            } catch (err) {
+                                console.warn(`Could not load template ${templateName}:`, err);
+                            }
+                        }
+                    }
+
+                    // Render forms for each template
+                    renderTemplateForm('didVerificationMethod', 'verificationMethodForm');
+                    renderTemplateForm('didDocument', 'didDocumentForm');
+                    renderTemplateForm('socialMedia', 'socialMediaForm');
+                    renderTemplateForm('communication', 'communicationForm');
+                } else {
+                    throw new Error('No templates found in response');
+                }
+            } catch (error) {
+                console.error('Failed to load templates:', error);
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'alert warning';
+                errorMsg.innerHTML = `<strong>⚠️ Template Loading Error</strong><br>Failed to load templates: ${error.message}<br><small>Please ensure the v0.9 templates are published and indexed.</small>`;
+                document.getElementById('verificationMethodForm').innerHTML = '';
+                document.getElementById('verificationMethodForm').appendChild(errorMsg);
+            }
+        }
+
+        function renderTemplateForm(templateName, containerId) {
+            const template = state.templates[templateName];
+            if (!template) {
+                document.getElementById(containerId).innerHTML = '<div class="alert warning">Template not found. Please ensure templates are published.</div>';
+                return;
+            }
+
+            const fieldsInTemplate = template.data?.fieldsInTemplate || {};
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            // Define fields that should be hidden (have spec defaults)
+            const hiddenFields = {
+                didVerificationMethod: [
+                    'vmId', 'vmType', 'controller', 'xpub', 'derivationSubPurpose', 
+                    'derivationAccount', 'derivationPathPrefix', 'leafIndexPolicy', 
+                    'leafHardened', 'validFromBlock', 'publicKeyMultibase', 
+                    'publicKeyJwk', 'leafIndexFixed', 'revokedFromBlock', 
+                    'bindingProofJws', 'bindingProofPurpose'
+                ],
+                didDocument: [
+                    'did', 'controller', 'keyBindingPolicy', 'verificationMethod',
+                    'authentication', 'assertionMethod'
+                ],
+                socialMedia: [
+                    // All fields are handled by custom UI
+                ],
+                communication: [
+                    // All fields are handled by custom UI
+                ]
+            };
+
+            const shouldHideField = (templateName, fieldName) => {
+                return hiddenFields[templateName]?.includes(fieldName) || false;
+            };
+
+            // Handle special templates with custom UI
+            if (templateName === 'socialMedia') {
+                renderSocialMediaForm(container);
+                return;
+            }
+            if (templateName === 'communication') {
+                renderCommunicationForm(container);
+                return;
+            }
+
+            Object.entries(fieldsInTemplate).forEach(([fieldName, fieldInfo]) => {
+                // Skip hidden fields
+                if (shouldHideField(templateName, fieldName)) {
+                    return;
+                }
+
+                const fieldType = fieldInfo.type || 'string';
+                const fieldIndex = fieldInfo.index;
+                
+                const formGroup = document.createElement('div');
+                formGroup.className = 'form-group';
+                
+                const label = document.createElement('label');
+                label.textContent = fieldName;
+                label.setAttribute('for', `${templateName}_${fieldName}`);
+                
+                const info = document.createElement('small');
+                info.className = 'template-field-info';
+                info.textContent = `Type: ${fieldType}, Index: ${fieldIndex}`;
+                
+                formGroup.appendChild(label);
+                formGroup.appendChild(info);
+
+                if (fieldType.startsWith('repeated ')) {
+                    const repeatedContainer = document.createElement('div');
+                    repeatedContainer.className = 'repeated-field';
+                    repeatedContainer.id = `${templateName}_${fieldName}_container`;
+                    
+                    const addBtn = document.createElement('button');
+                    addBtn.type = 'button';
+                    addBtn.className = 'add-field-btn';
+                    addBtn.textContent = '+ Add';
+                    addBtn.onclick = () => addRepeatedField(templateName, fieldName, fieldType);
+                    
+                    repeatedContainer.appendChild(addBtn);
+                    formGroup.appendChild(repeatedContainer);
+                    
+                    // Add initial field (only if not a required auto-filled field)
+                    if (!(templateName === 'didDocument' && (fieldName === 'verificationMethod' || fieldName === 'authentication' || fieldName === 'assertionMethod'))) {
+                        addRepeatedField(templateName, fieldName, fieldType);
+                    }
+                } else if (fieldType === 'enum') {
+                    const select = document.createElement('select');
+                    select.id = `${templateName}_${fieldName}`;
+                    select.name = fieldName;
+                    
+                    const enumValues = fieldInfo.enumValues || [];
+                    enumValues.forEach((value, index) => {
+                        const option = document.createElement('option');
+                        option.value = typeof value === 'object' ? value.code : value;
+                        option.textContent = typeof value === 'object' ? value.name : value;
+                        select.appendChild(option);
+                    });
+                    
+                    formGroup.appendChild(select);
+                } else if (fieldType === 'bool') {
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `${templateName}_${fieldName}`;
+                    checkbox.name = fieldName;
+                    formGroup.appendChild(checkbox);
+                } else {
+                    const input = document.createElement('input');
+                    input.type = fieldType === 'uint64' || fieldType === 'uint32' ? 'number' : 'text';
+                    input.id = `${templateName}_${fieldName}`;
+                    input.name = fieldName;
+                    if (fieldType === 'dref') {
+                        input.placeholder = 'did:arweave:...';
+                    }
+                    formGroup.appendChild(input);
+                }
+
+                container.appendChild(formGroup);
+            });
+
+            // Auto-fill defaults after form is rendered
+            autoFillDefaults(templateName, containerId);
+        }
+
+        function autoFillDefaults(templateName, containerId) {
+            if (!state.identity) {
+                // Identity not loaded yet, will be filled when identity is created
+                return;
+            }
+
+            if (templateName === 'didVerificationMethod') {
+                // Set defaults for didVerificationMethod (vmId is hidden and auto-filled)
+                // Other fields are also hidden and auto-filled
+            } else if (templateName === 'didDocument') {
+                // Set defaults for didDocument (authentication and assertionMethod are hidden and auto-filled)
+            }
+        }
+
+        function setFieldValue(templateName, fieldName, value) {
+            const elementId = `${templateName}_${fieldName}`;
+            const element = document.getElementById(elementId);
+            if (element) {
+                if (element.type === 'checkbox') {
+                    element.checked = value;
+                } else if (element.tagName === 'SELECT') {
+                    // Find matching option
+                    for (let option of element.options) {
+                        if (option.value === value || option.textContent.includes(value)) {
+                            element.value = option.value;
+                            break;
+                        }
+                    }
+                } else {
+                    element.value = value;
+                }
+            }
+        }
+
+        function renderSocialMediaForm(container) {
+            container.innerHTML = `
+                <div class="alert info">
+                    Add your social media profiles. Click "+ Add Platform" to add a new platform, then add usernames for that platform.
+                </div>
+                <div id="socialMediaEntries"></div>
+                <button type="button" class="add-field-btn" onclick="addSocialMediaPlatform()" style="margin-top: 1rem;">
+                    + Add Platform
+                </button>
+            `;
+            
+            // Initialize empty state
+            state.socialMediaEntries = state.socialMediaEntries || [];
+        }
+
+        function addSocialMediaPlatform() {
+            if (!state.socialMediaEntries) state.socialMediaEntries = [];
+            
+            const entryId = `sm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const entry = {
+                id: entryId,
+                platform: '',
+                usernames: ['']
+            };
+            state.socialMediaEntries.push(entry);
+            renderSocialMediaEntries();
+        }
+
+        function removeSocialMediaPlatform(entryId) {
+            state.socialMediaEntries = state.socialMediaEntries.filter(e => e.id !== entryId);
+            renderSocialMediaEntries();
+        }
+
+        function addSocialMediaUsername(entryId) {
+            const entry = state.socialMediaEntries.find(e => e.id === entryId);
+            if (entry) {
+                entry.usernames.push('');
+                renderSocialMediaEntries();
+            }
+        }
+
+        function removeSocialMediaUsername(entryId, usernameIndex) {
+            const entry = state.socialMediaEntries.find(e => e.id === entryId);
+            if (entry && entry.usernames.length > 1) {
+                entry.usernames.splice(usernameIndex, 1);
+                renderSocialMediaEntries();
+            }
+        }
+
+        function renderSocialMediaEntries() {
+            const container = document.getElementById('socialMediaEntries');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            const platforms = [
+                { value: 'website', label: 'Website' },
+                { value: 'youtube', label: 'YouTube' },
+                { value: 'x', label: 'X (Twitter)' },
+                { value: 'instagram', label: 'Instagram' },
+                { value: 'tiktok', label: 'TikTok' },
+                { value: 'facebook', label: 'Facebook' },
+                { value: 'threads', label: 'Threads' },
+                { value: 'snapchat', label: 'Snapchat' },
+                { value: 'reddit', label: 'Reddit' },
+                { value: 'linkedin', label: 'LinkedIn' },
+                { value: 'pinterest', label: 'Pinterest' },
+                { value: 'discord', label: 'Discord' },
+                { value: 'twitch', label: 'Twitch' },
+                { value: 'telegram', label: 'Telegram' },
+                { value: 'wechat', label: 'WeChat' },
+                { value: 'qq', label: 'QQ' },
+                { value: 'sinaWeibo', label: 'Sina Weibo' },
+                { value: 'vk', label: 'VK' },
+                { value: 'line', label: 'Line' },
+                { value: 'kakaoTalk', label: 'KakaoTalk' },
+                { value: 'mastodon', label: 'Mastodon' },
+                { value: 'bluesky', label: 'Bluesky' },
+                { value: 'tumblr', label: 'Tumblr' },
+                { value: 'medium', label: 'Medium' },
+                { value: 'substack', label: 'Substack' },
+                { value: 'quora', label: 'Quora' },
+                { value: 'vimeo', label: 'Vimeo' },
+                { value: 'dailymotion', label: 'Dailymotion' },
+                { value: 'rumble', label: 'Rumble' },
+                { value: 'odysee', label: 'Odysee' },
+                { value: 'signal', label: 'Signal' }
+            ];
+            
+            state.socialMediaEntries.forEach((entry, entryIndex) => {
+                const entryDiv = document.createElement('div');
+                entryDiv.className = 'social-media-entry';
+                entryDiv.style.cssText = 'border: 1px solid #ddd; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;';
+                
+                const header = document.createElement('div');
+                header.style.cssText = 'display: flex; gap: 1rem; align-items: center; margin-bottom: 0.5rem;';
+                
+                const platformSelect = document.createElement('select');
+                platformSelect.className = 'platform-select';
+                platformSelect.style.cssText = 'flex: 1; padding: 0.5rem;';
+                platformSelect.innerHTML = '<option value="">Select Platform...</option>' +
+                    platforms.map(p => `<option value="${p.value}" ${entry.platform === p.value ? 'selected' : ''}>${p.label}</option>`).join('');
+                platformSelect.onchange = (e) => {
+                    entry.platform = e.target.value;
+                };
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.textContent = '× Remove Platform';
+                removeBtn.className = 'add-field-btn';
+                removeBtn.onclick = () => removeSocialMediaPlatform(entry.id);
+                
+                header.appendChild(platformSelect);
+                header.appendChild(removeBtn);
+                
+                const usernamesDiv = document.createElement('div');
+                usernamesDiv.style.cssText = 'margin-left: 1rem;';
+                
+                entry.usernames.forEach((username, usernameIndex) => {
+                    const usernameRow = document.createElement('div');
+                    usernameRow.style.cssText = 'display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;';
+                    
+                    const usernameInput = document.createElement('input');
+                    usernameInput.type = 'text';
+                    usernameInput.placeholder = 'Username or handle...';
+                    usernameInput.value = username;
+                    usernameInput.style.cssText = 'flex: 1; padding: 0.5rem;';
+                    usernameInput.onchange = (e) => {
+                        entry.usernames[usernameIndex] = e.target.value;
+                    };
+                    
+                    const removeUsernameBtn = document.createElement('button');
+                    removeUsernameBtn.type = 'button';
+                    removeUsernameBtn.textContent = '×';
+                    removeUsernameBtn.className = 'add-field-btn';
+                    removeUsernameBtn.onclick = () => removeSocialMediaUsername(entry.id, usernameIndex);
+                    if (entry.usernames.length === 1) {
+                        removeUsernameBtn.disabled = true;
+                        removeUsernameBtn.style.opacity = '0.5';
+                    }
+                    
+                    usernameRow.appendChild(usernameInput);
+                    usernameRow.appendChild(removeUsernameBtn);
+                    usernamesDiv.appendChild(usernameRow);
+                });
+                
+                const addUsernameBtn = document.createElement('button');
+                addUsernameBtn.type = 'button';
+                addUsernameBtn.textContent = '+ Add Username';
+                addUsernameBtn.className = 'add-field-btn';
+                addUsernameBtn.onclick = () => addSocialMediaUsername(entry.id);
+                addUsernameBtn.style.cssText = 'margin-left: 1rem; margin-top: 0.5rem;';
+                
+                entryDiv.appendChild(header);
+                entryDiv.appendChild(usernamesDiv);
+                entryDiv.appendChild(addUsernameBtn);
+                container.appendChild(entryDiv);
+            });
+        }
+
+        function renderCommunicationForm(container) {
+            container.innerHTML = `
+                <div class="alert info">
+                    Add your communication methods. Click "+ Add Method" to add a new communication method, then add identifiers for that method.
+                </div>
+                <div id="communicationEntries"></div>
+                <button type="button" class="add-field-btn" onclick="addCommunicationMethod()" style="margin-top: 1rem;">
+                    + Add Method
+                </button>
+            `;
+            
+            // Initialize empty state
+            state.communicationEntries = state.communicationEntries || [];
+        }
+
+        function addCommunicationMethod() {
+            if (!state.communicationEntries) state.communicationEntries = [];
+            
+            const entryId = `comm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const entry = {
+                id: entryId,
+                method: '',
+                identifiers: ['']
+            };
+            state.communicationEntries.push(entry);
+            renderCommunicationEntries();
+        }
+
+        function removeCommunicationMethod(entryId) {
+            state.communicationEntries = state.communicationEntries.filter(e => e.id !== entryId);
+            renderCommunicationEntries();
+        }
+
+        function addCommunicationIdentifier(entryId) {
+            const entry = state.communicationEntries.find(e => e.id === entryId);
+            if (entry) {
+                entry.identifiers.push('');
+                renderCommunicationEntries();
+            }
+        }
+
+        function removeCommunicationIdentifier(entryId, identifierIndex) {
+            const entry = state.communicationEntries.find(e => e.id === entryId);
+            if (entry && entry.identifiers.length > 1) {
+                entry.identifiers.splice(identifierIndex, 1);
+                renderCommunicationEntries();
+            }
+        }
+
+        function renderCommunicationEntries() {
+            const container = document.getElementById('communicationEntries');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            const methods = [
+                { value: 'phone', label: 'Phone' },
+                { value: 'email', label: 'Email' },
+                { value: 'signal', label: 'Signal' },
+                { value: 'telegram', label: 'Telegram' },
+                { value: 'discord', label: 'Discord' },
+                { value: 'matrix', label: 'Matrix' },
+                { value: 'line', label: 'Line' },
+                { value: 'wechat', label: 'WeChat' },
+                { value: 'kakaotalk', label: 'KakaoTalk' }
+            ];
+            
+            state.communicationEntries.forEach((entry, entryIndex) => {
+                const entryDiv = document.createElement('div');
+                entryDiv.className = 'communication-entry';
+                entryDiv.style.cssText = 'border: 1px solid #ddd; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;';
+                
+                const header = document.createElement('div');
+                header.style.cssText = 'display: flex; gap: 1rem; align-items: center; margin-bottom: 0.5rem;';
+                
+                const methodSelect = document.createElement('select');
+                methodSelect.className = 'method-select';
+                methodSelect.style.cssText = 'flex: 1; padding: 0.5rem;';
+                methodSelect.innerHTML = '<option value="">Select Method...</option>' +
+                    methods.map(m => `<option value="${m.value}" ${entry.method === m.value ? 'selected' : ''}>${m.label}</option>`).join('');
+                methodSelect.onchange = (e) => {
+                    entry.method = e.target.value;
+                };
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.textContent = '× Remove Method';
+                removeBtn.className = 'add-field-btn';
+                removeBtn.onclick = () => removeCommunicationMethod(entry.id);
+                
+                header.appendChild(methodSelect);
+                header.appendChild(removeBtn);
+                
+                const identifiersDiv = document.createElement('div');
+                identifiersDiv.style.cssText = 'margin-left: 1rem;';
+                
+                entry.identifiers.forEach((identifier, identifierIndex) => {
+                    const identifierRow = document.createElement('div');
+                    identifierRow.style.cssText = 'display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;';
+                    
+                    const identifierInput = document.createElement('input');
+                    identifierInput.type = 'text';
+                    identifierInput.placeholder = entry.method === 'phone' ? 'Phone number...' : 
+                                                 entry.method === 'email' ? 'Email address...' : 
+                                                 'Identifier...';
+                    identifierInput.value = identifier;
+                    identifierInput.style.cssText = 'flex: 1; padding: 0.5rem;';
+                    identifierInput.onchange = (e) => {
+                        entry.identifiers[identifierIndex] = e.target.value;
+                    };
+                    
+                    const removeIdentifierBtn = document.createElement('button');
+                    removeIdentifierBtn.type = 'button';
+                    removeIdentifierBtn.textContent = '×';
+                    removeIdentifierBtn.className = 'add-field-btn';
+                    removeIdentifierBtn.onclick = () => removeCommunicationIdentifier(entry.id, identifierIndex);
+                    if (entry.identifiers.length === 1) {
+                        removeIdentifierBtn.disabled = true;
+                        removeIdentifierBtn.style.opacity = '0.5';
+                    }
+                    
+                    identifierRow.appendChild(identifierInput);
+                    identifierRow.appendChild(removeIdentifierBtn);
+                    identifiersDiv.appendChild(identifierRow);
+                });
+                
+                const addIdentifierBtn = document.createElement('button');
+                addIdentifierBtn.type = 'button';
+                addIdentifierBtn.textContent = '+ Add Identifier';
+                addIdentifierBtn.className = 'add-field-btn';
+                addIdentifierBtn.onclick = () => addCommunicationIdentifier(entry.id);
+                addIdentifierBtn.style.cssText = 'margin-left: 1rem; margin-top: 0.5rem;';
+                
+                entryDiv.appendChild(header);
+                entryDiv.appendChild(identifiersDiv);
+                entryDiv.appendChild(addIdentifierBtn);
+                container.appendChild(entryDiv);
+            });
+        }
+
+        function addRepeatedField(templateName, fieldName, fieldType) {
+            const container = document.getElementById(`${templateName}_${fieldName}_container`);
+            if (!container) {
+                console.error(`Container not found: ${templateName}_${fieldName}_container`);
+                return;
+            }
+            
+            const item = document.createElement('div');
+            item.className = 'repeated-field-item';
+            
+            const input = document.createElement('input');
+            input.type = fieldType.includes('dref') ? 'text' : 'text';
+            input.placeholder = fieldType.includes('dref') ? 'did:arweave:...' : 'Enter value...';
+            input.name = `${templateName}_${fieldName}[]`;
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.textContent = '×';
+            removeBtn.className = 'add-field-btn';
+            removeBtn.onclick = () => item.remove();
+            
+            item.appendChild(input);
+            item.appendChild(removeBtn);
+            
+            // Insert after the button (which is firstChild) or append if no children
+            if (container.firstChild && container.firstChild.nextSibling) {
+                container.insertBefore(item, container.firstChild.nextSibling);
+            } else {
+                container.appendChild(item);
+            }
+        }
+
+        function goToStep(step) {
+            if (step > 1 && !state.identity) {
+                alert('Please create your identity first');
+                return;
+            }
+
+            document.querySelectorAll('.step-indicator').forEach((el, i) => {
+                el.classList.remove('active');
+                if (i + 1 < step) el.classList.add('completed');
+                else if (i + 1 === step) el.classList.add('active');
+                else el.classList.remove('completed');
+            });
+
+            document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`step${step}`).classList.add('active');
+        }
+
+        // Step 1: Load Identity
+        document.getElementById('generateMnemonicBtn').onclick = async () => {
+            try {
+                const response = await fetch(`${API_BASE}/api/debug/generate-mnemonic`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+                }
+                
+                const data = await response.json();
+                document.getElementById('mnemonic').value = data.mnemonic;
+            } catch (error) {
+                console.error('Failed to generate mnemonic:', error);
+                alert('Failed to generate mnemonic: ' + error.message);
+            }
+        };
+
+        document.getElementById('loadIdentityBtn').onclick = async () => {
+            const mnemonic = document.getElementById('mnemonic').value.trim();
+            if (!mnemonic) {
+                alert('Please enter a mnemonic');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/debug/identity`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mnemonic })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+                    throw new Error(error.error || 'Failed to create identity');
+                }
+
+                state.identity = await response.json();
+                document.getElementById('identityInfo').classList.remove('hidden');
+                document.getElementById('displayDid').textContent = state.identity.did;
+                document.getElementById('displayXpub').textContent = state.identity.signingXpub.substring(0, 50) + '...';
+                document.getElementById('step1NextBtn').disabled = false;
+                
+                // Auto-fill defaults now that identity is loaded
+                autoFillDefaults('didVerificationMethod', 'verificationMethodForm');
+                autoFillDefaults('didDocument', 'didDocumentForm');
+            } catch (error) {
+                console.error('Failed to load identity:', error);
+                alert('Failed to load identity: ' + error.message);
+            }
+        };
+
+        async function processStep1() {
+            if (!state.identity) {
+                alert('Please load your identity first');
+                return;
+            }
+            goToStep(2);
+        }
+
+        async function processStep2() {
+            if (!state.identity) {
+                alert('Please create your identity first');
+                return;
+            }
+
+            // Ensure defaults are filled
+            autoFillDefaults('didVerificationMethod', 'verificationMethodForm');
+            
+            // Collect form data (defaults are already set)
+            const record = collectFormData('didVerificationMethod');
+            
+            // Ensure required fields have defaults (all are hidden and auto-filled)
+            record.vmId = '#sign';
+            record.vmType = 'oip:XpubDerivation2025';
+            record.controller = state.identity.did;
+            record.xpub = state.identity.signingXpub;
+            record.derivationSubPurpose = 'identity.sign';
+            record.derivationAccount = '0';
+            record.derivationPathPrefix = `m/176800'/0'/0'`;
+            record.leafIndexPolicy = 'payload_digest';
+            record.leafHardened = false;
+            record.validFromBlock = '0';
+            
+            state.records.didVerificationMethod = record;
+            goToStep(3);
+        }
+
+        async function processStep3() {
+            if (!state.identity) {
+                alert('Please create your identity first');
+                return;
+            }
+
+            // Ensure defaults are filled
+            autoFillDefaults('didDocument', 'didDocumentForm');
+            
+            // Collect form data (defaults are already set)
+            const record = collectFormData('didDocument');
+            
+            // Ensure required fields have defaults (all are hidden and auto-filled)
+            record.did = state.identity.did;
+            record.controller = state.identity.did;
+            record.keyBindingPolicy = 'xpub';
+            record.authentication = ['#sign'];
+            record.assertionMethod = ['#sign'];
+            
+            state.records.didDocument = record;
+            goToStep(4);
+        }
+
+        async function processStep4() {
+            // Collect social media data from custom UI
+            const record = {};
+            
+            if (state.socialMediaEntries) {
+                state.socialMediaEntries.forEach(entry => {
+                    if (entry.platform && entry.usernames.some(u => u.trim())) {
+                        const usernames = entry.usernames.filter(u => u.trim());
+                        if (usernames.length > 0) {
+                            if (!record[entry.platform]) {
+                                record[entry.platform] = [];
+                            }
+                            record[entry.platform].push(...usernames);
+                        }
+                    }
+                });
+            }
+            
+            state.records.socialMedia = record;
+            goToStep(5);
+        }
+
+        async function processStep5() {
+            // Collect communication data from custom UI
+            const record = {};
+            
+            if (state.communicationEntries) {
+                state.communicationEntries.forEach(entry => {
+                    if (entry.method && entry.identifiers.some(i => i.trim())) {
+                        const identifiers = entry.identifiers.filter(i => i.trim());
+                        if (identifiers.length > 0) {
+                            if (!record[entry.method]) {
+                                record[entry.method] = [];
+                            }
+                            record[entry.method].push(...identifiers);
+                        }
+                    }
+                });
+            }
+            
+            state.records.communication = record;
+            
+            // Show review
+            document.getElementById('reviewRecords').textContent = JSON.stringify(state.records, null, 2);
+            goToStep(6);
+        }
+
+        function collectFormData(templateName) {
+            const template = state.templates[templateName];
+            if (!template) return null;
+
+            const fieldsInTemplate = template.data?.fieldsInTemplate || {};
+            const record = {};
+
+            // Include defaults for hidden fields
+            if (templateName === 'didVerificationMethod' && state.identity) {
+                record.vmId = '#sign';
+                record.vmType = 'oip:XpubDerivation2025';
+                record.controller = state.identity.did;
+                record.xpub = state.identity.signingXpub;
+                record.derivationSubPurpose = 'identity.sign';
+                record.derivationAccount = '0';
+                record.derivationPathPrefix = `m/176800'/0'/0'`;
+                record.leafIndexPolicy = 'payload_digest';
+                record.leafHardened = false;
+                record.validFromBlock = '0';
+            } else if (templateName === 'didDocument' && state.identity) {
+                record.did = state.identity.did;
+                record.controller = state.identity.did;
+                record.keyBindingPolicy = 'xpub';
+                record.authentication = ['#sign'];
+                record.assertionMethod = ['#sign'];
+            }
+
+            Object.keys(fieldsInTemplate).forEach(fieldName => {
+                const fieldInfo = fieldsInTemplate[fieldName];
+                const fieldType = fieldInfo.type || 'string';
+                const elementId = `${templateName}_${fieldName}`;
+
+                if (fieldType.startsWith('repeated ')) {
+                    const inputs = document.querySelectorAll(`input[name="${templateName}_${fieldName}[]"]`);
+                    const values = Array.from(inputs).map(input => input.value.trim()).filter(v => v);
+                    if (values.length > 0) record[fieldName] = values;
+                } else if (fieldType === 'bool') {
+                    const checkbox = document.getElementById(elementId);
+                    if (checkbox) {
+                        record[fieldName] = checkbox.checked;
+                    }
+                } else {
+                    const input = document.getElementById(elementId);
+                    if (input && input.value.trim()) {
+                        record[fieldName] = input.value.trim();
+                    }
+                }
+            });
+
+            return record;
+        }
+
+        document.getElementById('confirmPublish').onchange = function() {
+            document.getElementById('publishBtn').disabled = !this.checked;
+        };
+
+        async function publishRecords() {
+            if (!document.getElementById('confirmPublish').checked) {
+                alert('Please confirm before publishing');
+                return;
+            }
+
+            const resultDiv = document.getElementById('publishResult');
+            const publishBtn = document.getElementById('publishBtn');
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerHTML = '<div class="loading">Publishing records...</div>';
+            publishBtn.disabled = true;
+            publishBtn.textContent = '⏳ Publishing...';
+
+            const results = {};
+            const errors = [];
+            let vmDid = null; // Store verification method DID for reference in DID document
+
+            try {
+                const mnemonic = document.getElementById('mnemonic').value.trim();
+                
+                // Publish records in order: verificationMethod -> didDocument -> socialMedia -> communication
+                const publishOrder = [
+                    { name: 'didVerificationMethod', template: 'didVerificationMethod', required: true },
+                    { name: 'didDocument', template: 'didDocument', required: true },
+                    { name: 'socialMedia', template: 'socialMedia', required: false },
+                    { name: 'communication', template: 'communication', required: false }
+                ];
+
+                for (const { name, template, required } of publishOrder) {
+                    let record = state.records[name];
+                    if (!record && required) {
+                        errors.push(`${name}: Required record is missing`);
+                        results[name] = { success: false, error: 'Required record is missing' };
+                        continue;
+                    }
+                    if (!record) continue;
+
+                    try {
+                        // If this is the DID document and we have a VM DID, update the reference
+                        if (name === 'didDocument' && vmDid) {
+                            // Create a copy to avoid mutating the original
+                            record = { ...record };
+                            if (!record.verificationMethod || !Array.isArray(record.verificationMethod)) {
+                                record.verificationMethod = [];
+                            }
+                            // Add or update the VM reference
+                            if (record.verificationMethod.length === 0 || record.verificationMethod[0] !== vmDid) {
+                                record.verificationMethod = [vmDid];
+                            }
+                        }
+
+                        // Build OIP v0.9 payload
+                        const templateDid = state.templates[template]?.oip?.didTx || state.templates[template]?.oip?.did;
+                        if (!templateDid) {
+                            throw new Error(`Template DID not found for ${template}`);
+                        }
+
+                        // Convert record to compressed format using template
+                        const compressedRecord = convertToCompressedFormat(record, template);
+                        
+                        // Build fragments structure
+                        const payload = {
+                            '@context': state.identity.did,
+                            tags: [
+                                { name: 'Content-Type', value: 'application/json' },
+                                { name: 'Index-Method', value: 'OIP' },
+                                { name: 'Ver', value: '0.9.0' },
+                                { name: 'Type', value: 'Record' },
+                                { name: 'RecordType', value: template },
+                                { name: 'Creator', value: state.identity.did }
+                            ],
+                            fragments: [{
+                                id: `fragment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                                dataType: 'Record',
+                                recordType: template,
+                                records: [compressedRecord]
+                            }]
+                        };
+
+                        // Sign the payload using debug endpoint
+                        const signResponse = await fetch(`${API_BASE}/api/debug/sign`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                payload: payload,
+                                mnemonic: mnemonic
+                            })
+                        });
+                        
+                        if (!signResponse.ok) {
+                            const error = await signResponse.json().catch(() => ({ error: `HTTP ${signResponse.status}` }));
+                            throw new Error(error.error || 'Signing failed');
+                        }
+
+                        const signedPayload = await signResponse.json();
+                        
+                        // Publish to Arweave using /api/records/newRecord
+                        const publishResponse = await fetch(`${API_BASE}/api/records/newRecord?recordType=${template}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                record: signedPayload
+                            })
+                        });
+
+                        if (!publishResponse.ok) {
+                            const error = await publishResponse.json();
+                            throw new Error(error.error || 'Publishing failed');
+                        }
+
+                        const result = await publishResponse.json();
+                        const txId = result.transactionId || result.did || result.didTx;
+                        const did = result.did || `did:arweave:${txId}`;
+                        
+                        results[name] = {
+                            success: true,
+                            txId: txId,
+                            did: did
+                        };
+
+                        // Store verification method DID for reference in DID document
+                        if (name === 'didVerificationMethod') {
+                            vmDid = did;
+                            // Update the DID document record to reference this VM
+                            // The verificationMethod field should contain the VM DID
+                            if (state.records.didDocument && !state.records.didDocument.verificationMethod) {
+                                state.records.didDocument.verificationMethod = [vmDid];
+                            } else if (state.records.didDocument && Array.isArray(state.records.didDocument.verificationMethod)) {
+                                // Replace or add the VM reference
+                                if (state.records.didDocument.verificationMethod.length === 0) {
+                                    state.records.didDocument.verificationMethod = [vmDid];
+                                } else {
+                                    state.records.didDocument.verificationMethod[0] = vmDid;
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`Error publishing ${name}:`, error);
+                        errors.push(`${name}: ${error.message}`);
+                        results[name] = {
+                            success: false,
+                            error: error.message
+                        };
+                    }
+                }
+
+                // Display results
+                let html = '<div class="alert info"><h3>📋 Publishing Results</h3>';
+                
+                Object.entries(results).forEach(([name, result]) => {
+                    if (result.success) {
+                        html += `<p>✅ <strong>${name}</strong>: Published<br>`;
+                        html += `<code style="font-size: 0.85rem; word-break: break-all;">${result.did || result.txId}</code></p>`;
+                    } else {
+                        html += `<p>❌ <strong>${name}</strong>: Failed<br>`;
+                        html += `<small style="color: var(--text-warning);">${result.error}</small></p>`;
+                    }
+                });
+
+                if (errors.length > 0) {
+                    html += `<div style="margin-top: var(--spacing-md);">`;
+                    html += `<strong style="color: var(--text-warning);">Errors:</strong><ul style="color: var(--text-warning);">`;
+                    errors.forEach(err => html += `<li>${err}</li>`);
+                    html += `</ul></div>`;
+                }
+
+                html += '</div>';
+                resultDiv.innerHTML = html;
+
+                if (errors.length === 0) {
+                    publishBtn.textContent = '✅ All Records Published!';
+                    publishBtn.style.background = 'var(--accent-step-4)';
+                } else {
+                    publishBtn.disabled = false;
+                    publishBtn.textContent = '⚠️ Retry Publishing';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="alert warning"><h3>❌ Error</h3><p>${error.message}</p></div>`;
+                publishBtn.disabled = false;
+                publishBtn.textContent = '✅ Publish All Records';
+            }
+        }
+
+        function convertToCompressedFormat(record, templateName) {
+            const template = state.templates[templateName];
+            if (!template) throw new Error(`Template ${templateName} not found`);
+
+            const fieldsInTemplate = template.data?.fieldsInTemplate || {};
+            const templateDid = template.oip?.didTx || template.oip?.did;
+            
+            if (!templateDid) {
+                throw new Error(`Template DID not found for ${templateName}`);
+            }
+            
+            const compressed = { t: templateDid };
+
+            Object.entries(fieldsInTemplate).forEach(([fieldName, fieldInfo]) => {
+                const value = record[fieldName];
+                if (value === undefined || value === null || value === '') return;
+
+                const index = fieldInfo.index;
+                const fieldType = fieldInfo.type || 'string';
+
+                if (fieldType.startsWith('repeated ')) {
+                    if (Array.isArray(value) && value.length > 0) {
+                        compressed[index] = value;
+                    }
+                } else if (fieldType === 'enum') {
+                    const enumValues = fieldInfo.enumValues || [];
+                    const enumIndex = enumValues.findIndex(v => 
+                        (typeof v === 'object' ? v.code : v) === value
+                    );
+                    compressed[index] = enumIndex !== -1 ? enumIndex : value;
+                } else if (fieldType === 'bool') {
+                    compressed[index] = value === true || value === 'true';
+                } else {
+                    compressed[index] = value;
+                }
+            });
+
+            return compressed;
+        }
+
+        // Initialize
+        loadTemplates();
+    </script>
+</body>
+</html>

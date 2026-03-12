@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧅 Onion Press</title>
+    <link rel="stylesheet" href="/onion-press/css/onion-press.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body data-onion-press="true">
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">🧅</span>
+                <span class="logo-text">Onion Press</span>
+            </div>
+            <nav class="nav">
+                <button class="nav-btn active" data-tab="browse">Browse</button>
+                <button class="nav-btn" data-tab="publish">Publish</button>
+                <button class="nav-btn admin-only hidden" data-tab="admin">⚙️ Admin</button>
+            </nav>
+            <div class="header-actions">
+                <button class="theme-toggle-btn" id="themeToggle" title="Toggle light/dark mode">
+                    🌙
+                </button>
+                <button class="settings-btn admin-only hidden" id="settingsBtn" title="Show Records From / Publish Records To">
+                    ⚙️
+                </button>
+                <div class="tor-status" id="torStatus" title="TOR Status">
+                    <span class="tor-indicator"></span>
+                    <span class="tor-label">TOR</span>
+                </div>
+                <button class="login-btn" id="loginBtn">Login</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Browse Tab -->
+        <section id="browseTab" class="tab-content active">
+            <!-- Filters -->
+            <div class="filters">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search records..." class="search-input">
+                    <button id="searchBtn" class="search-btn">🔍</button>
+                </div>
+                <div class="filter-group">
+                    <!-- Types menu commented out - only showing posts for now -->
+                    <!--
+                    <select id="typeFilter" class="filter-select">
+                        <option value="">All Types</option>
+                        <option value="post">📰 Posts</option>
+                        <option value="image">🖼️ Images</option>
+                        <option value="video">🎬 Videos</option>
+                        <option value="audio">🎵 Audio</option>
+                        <option value="recipe">🍳 Recipes</option>
+                        <option value="exercise">🏋️ Exercises</option>
+                    </select>
+                    -->
+                    <select id="sortFilter" class="filter-select">
+                        <option value="date:desc">Newest First</option>
+                        <option value="date:asc">Oldest First</option>
+                        <option value="name:asc">Name A-Z</option>
+                        <option value="name:desc">Name Z-A</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Author Filter Indicator -->
+            <div id="authorFilterIndicator" class="author-filter-indicator hidden">
+                <span class="filter-label">Filtered by:</span>
+                <span class="filter-value" id="authorFilterValue"></span>
+                <button class="filter-close" id="clearAuthorFilter" title="Clear filter">×</button>
+            </div>
+
+            <!-- Records Grid -->
+            <div id="recordsContainer" class="records-container">
+                <div class="loading">Loading records...</div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination" id="pagination">
+                <button class="page-btn" id="prevBtn" disabled>← Previous</button>
+                <span class="page-info" id="pageInfo">Page 1</span>
+                <button class="page-btn" id="nextBtn">Next →</button>
+            </div>
+        </section>
+
+        <!-- Publish Tab -->
+        <section id="publishTab" class="tab-content hidden">
+            <div class="publish-container">
+                <h2>Publish to The Onion Press</h2>
+                <p class="publish-description">
+                    Choose your publishing method:
+                </p>
+                
+                <div class="publishing-methods">
+                    <!-- Account/WordPress Publishing (Unified) -->
+                    <div class="publishing-method-card" id="accountPublishingCard">
+                        <div class="method-header">
+                            <span class="method-icon">👤</span>
+                            <h3>Account / WordPress</h3>
+                        </div>
+                        <p class="method-description">
+                            Use your server account to publish. Though we use a WordPress interface, your account will be kept entirely locally to this node. Posts will be identified by your account name. When Arweave is enabled, records are signed with both your account wallet and the server's creator key.
+                        </p>
+                        <a href="/publish?method=account" class="method-action-btn" id="accountWordPressBtn">
+                            <span id="accountWordPressBtnText">Publish with Account →</span>
+                        </a>
+                    </div>
+                    
+                    <!-- DID Publishing -->
+                    <div class="publishing-method-card">
+                        <div class="method-header">
+                            <span class="method-icon">🔑</span>
+                            <h3>Decentralized ID</h3>
+                        </div>
+                        <p class="method-description">
+                            Uses the <a href="https://www.w3.org/TR/did/" target="_blank" class="method-link">DID spec</a> for completely login-less publishing with client-side mnemonic signing. If you wish to create a provable relationship between all of your posts, this is the method you'll want to use. Just save the mnemonic that is generated the first time you post and use it again in future posts to create a cryptographic connection between your posts.
+                        </p>
+                        <a href="/publish?method=did" class="method-action-btn">
+                            Publish with DID →
+                        </a>
+                    </div>
+                    
+                    <!-- Anonymous Publishing -->
+                    <div class="publishing-method-card">
+                        <div class="method-header">
+                            <span class="method-icon">🔒</span>
+                            <h3>Anonymous</h3>
+                        </div>
+                        <p class="method-description">
+                            No account, no signatures, totally anonymous. Only downside is that there will be no relationship between your posts, so any trust you establish from one post cannot be leveraged in others.
+                        </p>
+                        <a href="/publish?method=anonymous" class="method-action-btn">
+                            Publish Anonymously →
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Admin Tab (requires login) -->
+        <section id="adminTab" class="tab-content hidden">
+            <div class="admin-container">
+                <h2>⚙️ Admin Settings</h2>
+
+                <!-- Publishing Destinations -->
+                <div class="settings-section">
+                    <h3>📤 Publishing Destinations</h3>
+                    <div class="setting-item">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="adminArweave" class="setting-toggle">
+                            <span class="toggle-slider"></span>
+                            <span>Publish to Arweave</span>
+                        </label>
+                        <span class="setting-desc">Permanent blockchain storage</span>
+                    </div>
+                    <div class="setting-item">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="adminGun" class="setting-toggle">
+                            <span class="toggle-slider"></span>
+                            <span>Publish to GUN</span>
+                        </label>
+                        <span class="setting-desc">Real-time peer synchronization</span>
+                    </div>
+                    <div class="setting-item">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="adminIA" class="setting-toggle">
+                            <span class="toggle-slider"></span>
+                            <span>Publish to Internet Archive (via TOR)</span>
+                        </label>
+                        <span class="setting-desc">Anonymous submission to IA gateway</span>
+                    </div>
+                </div>
+
+                <!-- GUN Settings -->
+                <div class="settings-section">
+                    <h3>🔄 GUN Synchronization</h3>
+                    <div class="form-group">
+                        <label for="adminGunPeers">External Peers (comma-separated)</label>
+                        <input type="text" id="adminGunPeers" placeholder="https://gun-relay.example.com/gun">
+                    </div>
+                    <div class="form-group">
+                        <label for="adminGunInterval">Sync Interval (ms)</label>
+                        <input type="number" id="adminGunInterval" value="30000" min="5000" max="300000">
+                    </div>
+                    <div class="form-group">
+                        <label for="adminGunTrusted">Trusted Nodes (comma-separated public keys)</label>
+                        <input type="text" id="adminGunTrusted" placeholder="pubkey1, pubkey2">
+                    </div>
+                </div>
+
+                <!-- TOR Status -->
+                <div class="settings-section">
+                    <h3>🧅 TOR Status</h3>
+                    <div class="tor-status-box" id="torStatusBox">
+                        <div class="tor-status-row">
+                            <span>Status:</span>
+                            <span id="torConnected" class="status-value">Checking...</span>
+                        </div>
+                        <div class="tor-status-row">
+                            <span>Your .onion address:</span>
+                            <span id="torOnionAddr" class="status-value monospace">Loading...</span>
+                        </div>
+                        <button id="copyOnionBtn" class="small-btn">📋 Copy Address</button>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="admin-actions">
+                    <button id="saveSettingsBtn" class="primary-btn">💾 Save Settings</button>
+                    <button id="resetSettingsBtn" class="secondary-btn">↺ Reset to Defaults</button>
+                </div>
+
+                <div id="adminStatus" class="admin-status hidden"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal hidden">
+        <div class="modal-content">
+            <button class="modal-close" id="closeLoginModal">×</button>
+            <h2>Login</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="primary-btn">Login</button>
+            </form>
+            <div id="loginError" class="error-msg hidden"></div>
+            <div style="margin-top: 1rem; text-align: center;">
+                <p style="color: var(--text-muted); font-size: 0.9rem;">
+                    Don't have an account? 
+                    <a href="#" id="showRegisterModal" style="color: var(--accent-primary); text-decoration: underline; cursor: pointer;">Register here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal hidden">
+        <div class="modal-content">
+            <button class="modal-close" id="closeRegisterModal">×</button>
+            <h2>Register</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" autocomplete="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" id="registerPassword" autocomplete="new-password" required>
+                </div>
+                <button type="submit" class="primary-btn">Register</button>
+            </form>
+            <div id="registerError" class="error-msg hidden"></div>
+            <div id="registerSuccess" class="success-msg hidden"></div>
+            <div style="margin-top: 1rem; text-align: center;">
+                <p style="color: var(--text-muted); font-size: 0.9rem;">
+                    Already have an account? 
+                    <a href="#" id="showLoginModal" style="color: var(--accent-primary); text-decoration: underline; cursor: pointer;">Login here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Record Detail Modal -->
+    <div id="recordModal" class="modal hidden">
+        <div class="modal-content large">
+            <button class="modal-close" id="closeRecordModal">×</button>
+            <div id="recordDetail"></div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-content">
+            <button class="modal-close" id="closeSettingsModal">×</button>
+            <h2>Post Sources</h2>
+            <p class="settings-description">Select sources from which posts are browsed and published to from this Onion Press node.</p>
+            <div class="destinations-settings">
+                <label class="destination-setting">
+                    <input type="checkbox" id="settingThisHost">
+                    <div class="dest-details">
+                        <span class="dest-name">Server (<span id="thisHostName">This Host</span>)</span>
+                        <span class="dest-desc">Posts will be published directly to this Onion Press node only: <a href="#" id="thisHostLink" target="_blank" class="dest-link">This Host</a>.</span>
+                    </div>
+                    <img src="/onion-press/icons/network-topology-server.png" alt="Server" class="dest-icon-img">
+                </label>
+                <label class="destination-setting">
+                    <input type="checkbox" id="settingGun" checked>
+                    <div class="dest-details">
+                        <span class="dest-name">Distributed Syncing (GUN)</span>
+                        <span class="dest-desc">Posts will sync to other registered Onion Press nodes over the <a href="https://gun.eco/" target="_blank" class="dest-link">GUN network</a>.</span>
+                    </div>
+                    <img src="/onion-press/icons/network-topology-gun.png" alt="GUN" class="dest-icon-img">
+                </label>
+                <label class="destination-setting">
+                    <input type="checkbox" id="settingArweave" checked>
+                    <div class="dest-details">
+                        <span class="dest-name">Decentralized Archives (Arweave)</span>
+                        <span class="dest-desc">Posts will be permanently stored in the <a href="https://arweave.org/" target="_blank" class="dest-link">Arweave blockchain</a> so they can be found by any Onion Press node that indexes from it.</span>
+                    </div>
+                    <img src="/onion-press/icons/network-topology-arweave.png" alt="Arweave" class="dest-icon-img">
+                </label>
+            </div>
+            <div class="settings-actions">
+                <button id="saveDestinationsBtn" class="primary-btn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <span>Onion Press v1.0.0</span>
+            <span class="separator">|</span>
+            <span>Powered by <a href="https://www.torproject.org/" target="_blank">Tor</a>, <a href="https://wordpress.com/" target="_blank">WordPress</a>, and <a href="https://oip.io" target="_blank">OIP</a></span>
+            <span class="separator">|</span>
+            <span>🧅 Anonymous Publishing</span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+    <script src="/onion-press/js/theme.js"></script>
+    <script src="/onion-press/js/api.js"></script>
+    <script src="/onion-press/js/settings.js"></script>
+    <script src="/onion-press/js/browse.js"></script>
+    <script src="/onion-press/js/admin.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,795 @@
+/* =========================================================
+   OIP Reference Client – Modern / Retro-Futurism Theme
+   This file overrides the inline styles in reference-client.html
+   ========================================================= */
+
+/* ---------- Design tokens ---------- */
+
+:root {
+    --bg-body: #030616;
+    --bg-body-alt: #05091e;
+    --bg-surface: rgba(10, 14, 32, 0.92);
+    --bg-surface-soft: rgba(14, 20, 45, 0.96);
+    --bg-elevated: rgba(19, 26, 58, 0.98);
+
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-strong: rgba(152, 115, 255, 0.55);
+
+    --accent-primary: #a78bfa;  /* soft purple */
+    --accent-secondary: #22e3ff; /* aqua */
+    --accent-warm: #ff9eca;     /* neon pink highlight */
+
+    --text-main: #f9f9ff;
+    --text-muted: #a5acd4;
+    --text-soft: #737aa1;
+
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+    --radius-xl: 22px;
+    --radius-pill: 999px;
+
+    --shadow-soft: 0 20px 45px rgba(0, 0, 0, 0.6);
+    --shadow-subtle: 0 14px 30px rgba(0, 0, 0, 0.45);
+
+    --blur-strong: 20px;
+    --blur-soft: 14px;
+
+    --transition-fast: 0.16s ease-out;
+    --transition-med: 0.22s ease-out;
+}
+
+/* ---------- Global layout ---------- */
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif;
+    color: var(--text-main);
+    background:
+        radial-gradient(circle at 0% 0%, rgba(34, 227, 255, 0.08), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(167, 139, 250, 0.16), transparent 55%),
+        linear-gradient(150deg, var(--bg-body) 0%, #020617 40%, var(--bg-body-alt) 100%);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Tighten overall content width and give it a “console window” look */
+body .main-content {
+    max-width: 1200px;
+    margin: 80px auto 48px;
+    padding: 0 24px 48px;
+    background: radial-gradient(circle at 0 0, rgba(255, 255, 255, 0.04), transparent 65%);
+}
+
+/* ---------- Top app header / nav ---------- */
+
+body header,
+body .header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(var(--blur-soft));
+    background: linear-gradient(
+        120deg,
+        rgba(9, 9, 20, 0.96),
+        rgba(6, 10, 29, 0.94)
+    );
+    border-bottom: 1px solid rgba(148, 163, 255, 0.28);
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.65);
+}
+
+body .header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Logo + title */
+body .header-content .logo-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+body .header-content .logo-area img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    box-shadow: 0 0 22px rgba(56, 189, 248, 0.6);
+}
+
+/* Main nav buttons */
+body .header-content nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: auto;
+}
+
+body .header-content nav a,
+body .header-content .nav-link {
+    position: relative;
+    padding: 7px 14px;
+    border-radius: var(--radius-pill);
+    font-size: 13px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--text-muted);
+    border: 1px solid rgba(148, 163, 255, 0.14);
+    background: radial-gradient(circle at 0 0, rgba(186, 230, 253, 0.08), transparent 70%);
+    backdrop-filter: blur(12px);
+    transition:
+        color var(--transition-fast),
+        border-color var(--transition-fast),
+        background var(--transition-fast),
+        box-shadow var(--transition-fast),
+        transform var(--transition-fast);
+}
+
+body .header-content nav a:hover,
+body .header-content .nav-link:hover {
+    color: var(--text-main);
+    border-color: rgba(96, 165, 250, 0.8);
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.45);
+    transform: translateY(-1px);
+}
+
+/* Search bar in header */
+body .header-search {
+    flex: 1;
+    max-width: 440px;
+    position: relative;
+}
+
+body .header-search input[type="text"],
+body .header-search input[type="search"] {
+    width: 100%;
+    border-radius: var(--radius-pill);
+    border: 1px solid rgba(148, 163, 255, 0.45);
+    padding: 9px 34px;
+    font-size: 14px;
+    color: var(--text-main);
+    background: linear-gradient(
+        120deg,
+        rgba(15, 23, 42, 0.96),
+        rgba(23, 37, 84, 0.96)
+    );
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.8);
+    outline: none;
+    transition:
+        border-color var(--transition-fast),
+        box-shadow var(--transition-fast),
+        background var(--transition-fast);
+}
+
+body .header-search input::placeholder {
+    color: var(--text-soft);
+}
+
+body .header-search input:focus {
+    border-color: var(--accent-secondary);
+    box-shadow: 0 0 0 1px rgba(34, 227, 255, 0.7),
+                0 14px 40px rgba(34, 211, 238, 0.28);
+    background: linear-gradient(
+        120deg,
+        rgba(10, 21, 48, 0.96),
+        rgba(24, 34, 84, 0.96)
+    );
+}
+
+/* ---------- Generic buttons / chips ---------- */
+
+body .btn-primary,
+body button.btn-primary {
+    border-radius: var(--radius-pill);
+    padding: 8px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background-image: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: #020617;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: var(--shadow-subtle);
+    transition:
+        transform var(--transition-fast),
+        box-shadow var(--transition-fast),
+        filter var(--transition-fast);
+}
+
+body .btn-primary:hover,
+body button.btn-primary:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+    box-shadow: 0 18px 45px rgba(34, 227, 255, 0.35);
+}
+
+body .btn-secondary,
+body button.btn-secondary {
+    border-radius: var(--radius-pill);
+    padding: 7px 16px;
+    border: 1px solid rgba(148, 163, 255, 0.5);
+    background: radial-gradient(circle at 0 0, rgba(148, 163, 255, 0.18), transparent 70%);
+    color: var(--text-main);
+    font-size: 13px;
+    cursor: pointer;
+    transition:
+        background var(--transition-fast),
+        border-color var(--transition-fast),
+        transform var(--transition-fast);
+}
+
+body .btn-secondary:hover {
+    border-color: rgba(96, 165, 250, 0.9);
+    background: radial-gradient(circle at 0 0, rgba(191, 219, 254, 0.26), transparent 70%);
+    transform: translateY(-1px);
+}
+
+body .btn-small {
+    font-size: 12px;
+    padding: 4px 10px;
+}
+
+/* Pill chips (record type, tags, filters) */
+body .record-type-badge,
+body .record-did-badge,
+body .tag-chip,
+body .filter-chip {
+    border-radius: var(--radius-pill);
+    padding: 2px 9px;
+    font-size: 11px;
+    line-height: 1.6;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid rgba(148, 163, 255, 0.35);
+    background: radial-gradient(circle at 0 0, rgba(129, 140, 248, 0.26), transparent 65%);
+    color: var(--text-main);
+    white-space: nowrap;
+}
+
+/* Accent chip by type */
+body .record-type-badge {
+    border-color: rgba(34, 211, 238, 0.7);
+    background: radial-gradient(circle at 0 0, rgba(34, 211, 238, 0.32), transparent 67%);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+/* ---------- Records toolbar / filters ---------- */
+
+body .records-container {
+    margin-top: 24px;
+    color: var(--text-main);
+}
+
+body .records-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+body .records-header-left h1,
+body .records-header-left .page-title,
+body .records-header-left h2 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #e5e7ff;
+}
+
+body .records-header-left .meta {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--text-soft);
+}
+
+/* Sort / view controls + filters summary */
+body .records-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text-soft);
+}
+
+/* Standardise selects */
+body select {
+    border-radius: var(--radius-pill);
+    border: 1px solid rgba(148, 163, 255, 0.5);
+    /* Use a more solid background for better text visibility */
+    background: rgba(15, 23, 42, 0.95);
+    /* Ensure selected text is clearly visible */
+    color: #ffffff;
+    padding: 6px 26px 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    /* Keep native appearance for full functionality */
+    font-weight: 500;
+}
+
+/* Ensure select options are visible with proper contrast */
+body select option {
+    background: #ffffff;
+    color: #000000;
+    padding: 6px 12px;
+}
+
+/* Advanced filter panel at top */
+body .filters-section {
+    position: relative;
+    z-index: 10;
+    margin-top: 14px;
+    padding: 16px 18px;
+    border-radius: var(--radius-lg);
+    background:
+        linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.98)),
+        radial-gradient(circle at 0 0, rgba(34, 211, 238, 0.18), transparent 65%);
+    border: 1px solid rgba(148, 163, 255, 0.4);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(var(--blur-strong));
+}
+
+body .filters-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    align-items: center;
+}
+
+body .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 150px;
+}
+
+body .filter-group label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+}
+
+body .filter-group input,
+body .filter-group select {
+    border-radius: var(--radius-pill);
+    border: 1px solid rgba(148, 163, 255, 0.55);
+    background: rgba(15, 23, 42, 0.96);
+    color: var(--text-main);
+    padding: 6px 12px;
+    font-size: 12px;
+    outline: none;
+    transition:
+        border-color var(--transition-fast),
+        box-shadow var(--transition-fast),
+        background var(--transition-fast);
+}
+
+body .filter-group input:focus,
+body .filter-group select:focus {
+    border-color: var(--accent-secondary);
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.65);
+    background: rgba(9, 12, 38, 0.98);
+}
+
+body .tag-filters-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Drawer version of filters on smaller screens */
+body .filters-drawer {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 400px;
+    max-width: 90vw;
+    z-index: 60;
+    backdrop-filter: blur(var(--blur-soft));
+    background: linear-gradient(135deg, rgba(9, 9, 20, 0.96), rgba(15, 23, 42, 0.98));
+    border-left: 1px solid rgba(148, 163, 255, 0.45);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+body .filters-drawer-content {
+    padding: 20px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* ---------- Records grid / cards ---------- */
+
+body .records-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px;
+    margin-top: 22px;
+}
+
+/* List layout */
+body .records-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 22px;
+}
+
+body .records-list .record-card {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+}
+
+/* Core card */
+body .record-card {
+    position: relative;
+    border-radius: var(--radius-xl);
+    background:
+        linear-gradient(140deg, rgba(15, 23, 42, 0.96), rgba(12, 10, 30, 0.99)),
+        radial-gradient(circle at 0 0, rgba(34, 211, 238, 0.24), transparent 70%);
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-subtle);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition:
+        transform var(--transition-med),
+        box-shadow var(--transition-med),
+        border-color var(--transition-med),
+        background-position var(--transition-med),
+        filter var(--transition-med);
+    background-size: 180% 180%;
+}
+
+body .record-card::before {
+    /* subtle “scan line” sheen */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        120deg,
+        rgba(148, 163, 255, 0.06),
+        transparent 45%,
+        transparent 55%,
+        rgba(34, 211, 238, 0.08)
+    );
+    mix-blend-mode: screen;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    pointer-events: none;
+}
+
+body .record-card:hover {
+    transform: translateY(-4px) translateZ(0);
+    border-color: rgba(148, 163, 255, 0.6);
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.95);
+    background-position: 100% 0;
+    filter: saturate(1.06);
+}
+
+body .record-card:hover::before {
+    opacity: 1;
+}
+
+/* Image/type banner */
+body .record-image {
+    height: 140px;
+    background: linear-gradient(135deg, #6366f1, #22d3ee);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(15, 23, 42, 0.9);
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+body .record-image span {
+    background: rgba(15, 23, 42, 0.18);
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+}
+
+/* Card header + meta */
+body .record-header {
+    padding: 14px 16px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+body .record-date {
+    font-size: 11px;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+}
+
+/* Title / description */
+body .record-content {
+    padding: 4px 16px 10px;
+}
+
+body .record-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e5e7ff;
+    margin-bottom: 4px;
+}
+
+body .record-description {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-muted);
+    max-height: 4.1em;
+    overflow: hidden;
+}
+
+/* Tags & DID */
+body .record-meta {
+    padding: 4px 16px 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+body .record-footer {
+    padding: 8px 16px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-top: 1px solid rgba(148, 163, 255, 0.18);
+    font-size: 11px;
+    color: var(--text-soft);
+}
+
+body .record-footer .record-did {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* “View original / show structure” buttons in footer */
+body .record-footer .btn-secondary,
+body .record-footer .btn-small {
+    padding: 5px 11px;
+    font-size: 11px;
+}
+
+/* ---------- AI drawer / ALFRED panel ---------- */
+
+body .ai-drawer {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 450px;
+    max-width: 90vw;
+    z-index: 50;
+    background:
+        radial-gradient(circle at 0 0, rgba(94, 234, 212, 0.15), transparent 65%),
+        linear-gradient(145deg, rgba(23, 37, 84, 0.98), rgba(30, 64, 175, 0.98));
+    border-left: 1px solid rgba(129, 140, 248, 0.6);
+    box-shadow: -24px 0 55px rgba(15, 23, 42, 0.95);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+body .ai-drawer-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(148, 163, 255, 0.2);
+    flex-shrink: 0;
+}
+
+body .ai-drawer .ai-drawer-content {
+    padding: 18px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Chat header */
+body .chat-header {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 6px;
+}
+
+body .chat-header h2 {
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+}
+
+body .chat-header .sub {
+    font-size: 12px;
+    color: var(--text-soft);
+}
+
+/* Chat conversation area */
+body .chat-conversation {
+    border-radius: var(--radius-lg);
+    background: rgba(15, 23, 42, 0.96);
+    border: 1px solid rgba(148, 163, 255, 0.45);
+    padding: 12px 14px;
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Chat messages */
+body .chat-message {
+    max-width: 90%;
+    padding: 8px 11px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+body .chat-message.user {
+    margin-left: auto;
+    background: radial-gradient(circle at 0 0, rgba(34, 211, 238, 0.4), rgba(59, 130, 246, 0.9));
+    color: #020617;
+}
+
+body .chat-message.ai {
+    margin-right: auto;
+    background: radial-gradient(circle at 100% 0, rgba(167, 139, 250, 0.38), rgba(30, 64, 175, 0.96));
+    border: 1px solid rgba(167, 139, 250, 0.7);
+}
+
+/* Chat input */
+body .chat-input-container {
+    margin-top: 10px;
+    border-radius: var(--radius-pill);
+    background: rgba(15, 23, 42, 0.96);
+    border: 1px solid rgba(148, 163, 255, 0.6);
+    padding: 6px 6px 6px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+body .chat-input-container textarea,
+body .chat-input-container input[type="text"] {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--text-main);
+    font-size: 13px;
+    resize: none;
+    outline: none;
+}
+
+body .chat-send-btn {
+    border-radius: var(--radius-pill);
+    border: none;
+    padding: 7px 13px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    background-image: linear-gradient(135deg, var(--accent-warm), var(--accent-secondary));
+    color: #020617;
+    box-shadow: 0 14px 35px rgba(251, 113, 133, 0.45);
+    transition:
+        transform var(--transition-fast),
+        box-shadow var(--transition-fast),
+        filter var(--transition-fast);
+}
+
+body .chat-send-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.04);
+    box-shadow: 0 18px 40px rgba(251, 113, 133, 0.6);
+}
+
+/* ---------- Microphone / waveform controls (for voice input) ---------- */
+
+body .waveform-container {
+    width: 100%;
+    height: 54px;
+    border-radius: var(--radius-pill);
+    background: radial-gradient(circle at 0 0, rgba(34, 211, 238, 0.26), rgba(15, 23, 42, 0.96));
+    border: 1px solid rgba(56, 189, 248, 0.9);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    box-shadow: 0 20px 40px rgba(34, 211, 238, 0.35);
+}
+
+body .waveform-container canvas {
+    flex: 1;
+}
+
+/* Mic button */
+body .mic-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(251, 113, 133, 0.9);
+    background: radial-gradient(circle at 30% 0, #fb7185, #f97316);
+    color: #020617;
+    cursor: pointer;
+    box-shadow: 0 18px 38px rgba(248, 113, 113, 0.65);
+    transition:
+        transform var(--transition-fast),
+        box-shadow var(--transition-fast),
+        filter var(--transition-fast);
+}
+
+body .mic-btn:hover {
+    transform: translateY(-1px) scale(1.03);
+    filter: brightness(1.02);
+    box-shadow: 0 22px 46px rgba(248, 113, 113, 0.8);
+}
+
+body .mic-btn.listening {
+    box-shadow: 0 0 0 1px rgba(251, 113, 133, 0.8),
+                0 0 0 8px rgba(248, 113, 113, 0.25);
+}
+
+/* ---------- Responsive tweaks ---------- */
+
+@media (max-width: 1024px) {
+    body .main-content {
+        margin-top: 72px;
+        padding: 0 18px 36px;
+    }
+
+    body .records-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+
+    body .records-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 768px) {
+    body .header-content {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    body .header-search {
+        order: 3;
+        width: 100%;
+    }
+
+    body .records-list .record-card {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    body .record-image {
+        height: 120px;
+    }
+}

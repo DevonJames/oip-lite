@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 OIP v0.9 Debug Interface</title>
+    <link rel="stylesheet" href="css/onion-press.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════════════════════════════════════════════════════
+           Debug Interface - Additional Styles
+           ═══════════════════════════════════════════════════════════════════════════════ */
+        
+        :root {
+            --accent-step-1: #f472b6;  /* Pink - Input */
+            --accent-step-2: #fb923c;  /* Orange - Translation */
+            --accent-step-3: #facc15;  /* Yellow - Digest */
+            --accent-step-4: #4ade80;  /* Green - Signature */
+            --accent-step-5: #22d3ee;  /* Cyan - Verification */
+            --accent-step-6: #a78bfa;  /* Purple - Final */
+            --font-mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+        }
+
+        .debug-container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .debug-header {
+            text-align: center;
+            margin-bottom: var(--spacing-2xl);
+            padding-bottom: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .debug-header h1 {
+            font-size: 2rem;
+            margin-bottom: var(--spacing-sm);
+            background: linear-gradient(135deg, var(--accent-step-1), var(--accent-step-6));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .debug-header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        /* Step Progress Bar */
+        .step-progress {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-2xl);
+            position: relative;
+        }
+
+        .step-progress::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--border-color);
+        }
+
+        .step-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            transition: var(--transition-normal);
+        }
+
+        .step-indicator:hover .step-number {
+            transform: scale(1.1);
+        }
+
+        .step-indicator.active .step-number {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: white;
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+        }
+
+        .step-indicator.completed .step-number {
+            background: var(--accent-success);
+            border-color: var(--accent-success);
+            color: white;
+        }
+
+        .step-indicator[data-step="1"].active .step-number,
+        .step-indicator[data-step="1"].completed .step-number { background: var(--accent-step-1); border-color: var(--accent-step-1); }
+        .step-indicator[data-step="2"].active .step-number,
+        .step-indicator[data-step="2"].completed .step-number { background: var(--accent-step-2); border-color: var(--accent-step-2); }
+        .step-indicator[data-step="3"].active .step-number,
+        .step-indicator[data-step="3"].completed .step-number { background: var(--accent-step-3); border-color: var(--accent-step-3); color: #000; }
+        .step-indicator[data-step="4"].active .step-number,
+        .step-indicator[data-step="4"].completed .step-number { background: var(--accent-step-4); border-color: var(--accent-step-4); color: #000; }
+        .step-indicator[data-step="5"].active .step-number,
+        .step-indicator[data-step="5"].completed .step-number { background: var(--accent-step-5); border-color: var(--accent-step-5); color: #000; }
+        .step-indicator[data-step="6"].active .step-number,
+        .step-indicator[data-step="6"].completed .step-number { background: var(--accent-step-6); border-color: var(--accent-step-6); }
+
+        .step-label {
+            margin-top: var(--spacing-sm);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: center;
+            max-width: 80px;
+        }
+
+        .step-indicator.active .step-label,
+        .step-indicator.completed .step-label {
+            color: var(--text-primary);
+        }
+
+        /* Step Content */
+        .step-content {
+            display: none;
+        }
+
+        .step-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .step-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .step-section h2 {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            font-size: 1.3rem;
+        }
+
+        .step-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: var(--font-mono);
+        }
+
+        .step-badge.step-1 { background: var(--accent-step-1); color: #000; }
+        .step-badge.step-2 { background: var(--accent-step-2); color: #000; }
+        .step-badge.step-3 { background: var(--accent-step-3); color: #000; }
+        .step-badge.step-4 { background: var(--accent-step-4); color: #000; }
+        .step-badge.step-5 { background: var(--accent-step-5); color: #000; }
+        .step-badge.step-6 { background: var(--accent-step-6); color: #fff; }
+
+        /* JSON Display */
+        .json-display {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .json-display pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .json-key { color: #79c0ff; }
+        .json-string { color: #a5d6ff; }
+        .json-number { color: #f2cc60; }
+        .json-boolean { color: #ff7b72; }
+        .json-null { color: #8b949e; }
+
+        /* Crypto Display */
+        .crypto-value {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            word-break: break-all;
+            margin: var(--spacing-sm) 0;
+        }
+
+        .crypto-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: var(--spacing-xs);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .crypto-label .badge {
+            background: var(--bg-tertiary);
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+        }
+
+        /* Field Mapping Table */
+        .field-mapping-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: var(--spacing-md) 0;
+        }
+
+        .field-mapping-table th,
+        .field-mapping-table td {
+            padding: var(--spacing-sm) var(--spacing-md);
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .field-mapping-table th {
+            background: var(--bg-tertiary);
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .field-mapping-table td:first-child {
+            font-family: var(--font-mono);
+            color: var(--accent-step-1);
+        }
+
+        .field-mapping-table td:nth-child(2) {
+            font-family: var(--font-mono);
+            color: var(--accent-step-4);
+        }
+
+        .field-mapping-table td:last-child {
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* Verification Status */
+        .verification-status {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-md);
+            margin: var(--spacing-md) 0;
+        }
+
+        .verification-status.valid {
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid var(--accent-success);
+        }
+
+        .verification-status.invalid {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid var(--accent-error);
+        }
+
+        .verification-icon {
+            font-size: 2rem;
+        }
+
+        .verification-text h3 {
+            margin: 0;
+        }
+
+        .verification-text p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Navigation Buttons */
+        .step-navigation {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .nav-btn {
+            padding: var(--spacing-md) var(--spacing-xl);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .nav-btn.prev {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .nav-btn.prev:hover:not(:disabled) {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .nav-btn.next {
+            background: var(--accent-primary);
+            border: none;
+            color: white;
+        }
+
+        .nav-btn.next:hover:not(:disabled) {
+            background: var(--accent-secondary);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .nav-btn.approve {
+            background: var(--accent-success);
+            border: none;
+            color: white;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .nav-btn.approve:hover:not(:disabled) {
+            background: #16a34a;
+        }
+
+        /* Identity Section */
+        .identity-card {
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(167, 139, 250, 0.05));
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .identity-card h3 {
+            margin-bottom: var(--spacing-md);
+            color: var(--accent-secondary);
+        }
+
+        .identity-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: var(--spacing-sm) 0;
+            border-bottom: 1px solid rgba(124, 58, 237, 0.2);
+        }
+
+        .identity-row:last-child {
+            border-bottom: none;
+        }
+
+        .identity-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .identity-value {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            word-break: break-all;
+            max-width: 70%;
+            text-align: right;
+        }
+
+        /* Comparison view */
+        .comparison-view {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-lg);
+        }
+
+        .comparison-panel {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+        }
+
+        .comparison-panel h4 {
+            margin-bottom: var(--spacing-sm);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Tags Display */
+        .tags-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+            margin: var(--spacing-md) 0;
+        }
+
+        .tag-item {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+
+        .tag-name {
+            color: var(--accent-step-5);
+            font-size: 0.7rem;
+            margin-bottom: 2px;
+        }
+
+        .tag-value {
+            color: var(--text-primary);
+            word-break: break-all;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Loading State */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-2xl);
+            color: var(--text-muted);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: var(--spacing-md);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            margin: var(--spacing-md) 0;
+        }
+
+        .alert.info {
+            background: rgba(124, 58, 237, 0.15);
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-secondary);
+        }
+
+        .alert.warning {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid var(--accent-warning);
+            color: var(--accent-warning);
+        }
+
+        .alert.success {
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid var(--accent-success);
+            color: var(--accent-success);
+        }
+
+        .alert.error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid var(--accent-error);
+            color: var(--accent-error);
+        }
+
+        /* Copy Button */
+        .copy-btn {
+            background: var(--bg-hover);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .copy-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--accent-primary);
+        }
+
+        @media (max-width: 768px) {
+            .step-progress {
+                overflow-x: auto;
+                padding-bottom: var(--spacing-md);
+            }
+
+            .comparison-view {
+                grid-template-columns: 1fr;
+            }
+
+            .step-navigation {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">🔐</span>
+                <span class="logo-text">OIP v0.9 Debug</span>
+            </div>
+            <nav class="nav">
+                <a href="/" class="nav-btn">← Back to Onion Press</a>
+            </nav>
+            <div class="header-actions">
+                <div class="tor-status" id="torStatus" title="TOR Status">
+                    <span class="tor-indicator"></span>
+                    <span class="tor-label">TOR</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="debug-container">
+            <!-- Header -->
+            <div class="debug-header">
+                <h1>🔐 OIP v0.9 Cryptographic Debugger</h1>
+                <p>Step through the complete signing workflow for publishing POST records</p>
+            </div>
+
+            <!-- Step Progress -->
+            <div class="step-progress">
+                <div class="step-indicator active" data-step="1" onclick="goToStep(1)">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Input</div>
+                </div>
+                <div class="step-indicator" data-step="2" onclick="goToStep(2)">
+                    <div class="step-number">2</div>
+                    <div class="step-label">OIP Format</div>
+                </div>
+                <div class="step-indicator" data-step="3" onclick="goToStep(3)">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Digest</div>
+                </div>
+                <div class="step-indicator" data-step="4" onclick="goToStep(4)">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Sign</div>
+                </div>
+                <div class="step-indicator" data-step="5" onclick="goToStep(5)">
+                    <div class="step-number">5</div>
+                    <div class="step-label">Verify</div>
+                </div>
+                <div class="step-indicator" data-step="6" onclick="goToStep(6)">
+                    <div class="step-number">6</div>
+                    <div class="step-label">Publish</div>
+                </div>
+            </div>
+
+            <!-- Step 1: Input -->
+            <div id="step1" class="step-content active">
+                <div class="step-section">
+                    <h2><span class="step-badge step-1">1</span> Create POST Record</h2>
+                    
+                    <!-- Identity Setup -->
+                    <div class="identity-card">
+                        <h3>🔑 Creator Identity</h3>
+                        <div class="form-group">
+                            <label for="mnemonic">BIP-39 Mnemonic (24 words)</label>
+                            <textarea id="mnemonic" rows="3" placeholder="Enter your 24-word mnemonic phrase..."></textarea>
+                            <small style="color: var(--text-muted);">⚠️ For testing only. Never share your real mnemonic!</small>
+                        </div>
+                        <button id="generateMnemonicBtn" class="secondary-btn" style="margin-top: var(--spacing-sm);">
+                            🎲 Generate Test Mnemonic
+                        </button>
+                        <div id="identityInfo" class="hidden" style="margin-top: var(--spacing-md);">
+                            <div class="identity-row">
+                                <span class="identity-label">DID</span>
+                                <span class="identity-value" id="displayDid">-</span>
+                            </div>
+                            <div class="identity-row">
+                                <span class="identity-label">Signing xpub</span>
+                                <span class="identity-value" id="displayXpub">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Record Form -->
+                    <div class="form-group">
+                        <label for="postTitle">Title</label>
+                        <input type="text" id="postTitle" placeholder="Enter post title..." value="My First OIP v0.9 Post">
+                    </div>
+                    <div class="form-group">
+                        <label for="postDescription">Description</label>
+                        <textarea id="postDescription" rows="2" placeholder="Brief description...">Testing the OIP v0.9 signing workflow</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="postByline">Byline (Author)</label>
+                        <input type="text" id="postByline" placeholder="Author name..." value="Anonymous">
+                    </div>
+                    <div class="form-group">
+                        <label for="postContent">Article Content</label>
+                        <textarea id="postContent" rows="5" placeholder="Main article content...">This is the main body of the article, published using the Open Index Protocol v0.9 specification.</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="postWebUrl">Web URL (canonical)</label>
+                        <input type="text" id="postWebUrl" placeholder="https://example.com/post" value="">
+                    </div>
+                    <div class="form-group">
+                        <label for="postTags">Tags (comma-separated)</label>
+                        <input type="text" id="postTags" placeholder="news, tech, oip" value="oip, blockchain, test">
+                    </div>
+                </div>
+
+                <div class="step-navigation">
+                    <div></div>
+                    <button class="nav-btn next" onclick="processStep1()">
+                        Translate to OIP Format →
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: OIP Format Translation -->
+            <div id="step2" class="step-content">
+                <div class="step-section">
+                    <h2><span class="step-badge step-2">2</span> OIP v0.9 Format Translation</h2>
+                    
+                    <div class="alert info">
+                        Field names are replaced with their index values from the POST template. This compresses the record for efficient blockchain storage.
+                    </div>
+
+                    <h3 style="margin-top: var(--spacing-lg);">Field Mapping</h3>
+                    <table class="field-mapping-table">
+                        <thead>
+                            <tr>
+                                <th>Human Field</th>
+                                <th>Index</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fieldMappingBody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+
+                    <h3 style="margin-top: var(--spacing-lg);">Comparison</h3>
+                    <div class="comparison-view">
+                        <div class="comparison-panel">
+                            <h4>📝 Human-Readable Input</h4>
+                            <div class="json-display" id="humanReadableJson"></div>
+                        </div>
+                        <div class="comparison-panel">
+                            <h4>📦 OIP v0.9 Compressed Format</h4>
+                            <div class="json-display" id="compressedJson"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step-navigation">
+                    <button class="nav-btn prev" onclick="goToStep(1)">
+                        ← Back to Input
+                    </button>
+                    <button class="nav-btn next" onclick="processStep2()">
+                        Compute Digest →
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Digest Computation -->
+            <div id="step3" class="step-content">
+                <div class="step-section">
+                    <h2><span class="step-badge step-3">3</span> Payload Digest Computation</h2>
+                    
+                    <div class="alert info">
+                        The payload is serialized using <strong>Canonical JSON</strong> (sorted keys, no whitespace), then SHA-256 hashed. This digest is used for both key derivation and signing.
+                    </div>
+
+                    <h3 style="margin-top: var(--spacing-lg);">Canonical JSON (Pre-Signature)</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: var(--spacing-sm);">
+                        Keys sorted alphabetically, no signature tags included yet
+                    </p>
+                    <div class="json-display" id="canonicalJson" style="max-height: 200px;"></div>
+
+                    <h3 style="margin-top: var(--spacing-lg);">Payload Digest</h3>
+                    <div class="crypto-label">
+                        <span>SHA-256 Hash (Base64URL encoded)</span>
+                        <button class="copy-btn" onclick="copyToClipboard('payloadDigestValue')">Copy</button>
+                    </div>
+                    <div class="crypto-value" id="payloadDigestValue">-</div>
+
+                    <h3 style="margin-top: var(--spacing-lg);">Key Derivation Index</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: var(--spacing-sm);">
+                        Algorithm: <code>uint31(SHA256("oip:" + payloadDigest))</code>
+                    </p>
+                    <div class="crypto-label">
+                        <span>Derived Index (for key derivation path)</span>
+                    </div>
+                    <div class="crypto-value" id="keyIndexValue">-</div>
+
+                    <h3 style="margin-top: var(--spacing-lg);">Full Derivation Path</h3>
+                    <div class="crypto-value" id="derivationPathValue">-</div>
+                </div>
+
+                <div class="step-navigation">
+                    <button class="nav-btn prev" onclick="goToStep(2)">
+                        ← Back to Format
+                    </button>
+                    <button class="nav-btn next" onclick="processStep3()">
+                        Generate Signature →
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 4: Signature Generation -->
+            <div id="step4" class="step-content">
+                <div class="step-section">
+                    <h2><span class="step-badge step-4">4</span> Signature Generation</h2>
+                    
+                    <div class="alert info">
+                        A child key is derived from the signing xpub at the computed index, then used to sign the payload hash using secp256k1 ECDSA.
+                    </div>
+
+                    <h3 style="margin-top: var(--spacing-lg);">Derived Signing Key</h3>
+                    <div class="crypto-label">
+                        <span>Public Key (compressed, hex)</span>
+                        <button class="copy-btn" onclick="copyToClipboard('derivedPubKey')">Copy</button>
+                    </div>
+                    <div class="crypto-value" id="derivedPubKey">-</div>
+
+                    <h3 style="margin-top: var(--spacing-lg);">Message Hash</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: var(--spacing-sm);">
+                        SHA-256 of the canonical JSON payload
+                    </p>
+                    <div class="crypto-value" id="messageHash">-</div>
+
+                    <h3 style="margin-top: var(--spacing-lg);">ECDSA Signature</h3>
+                    <div class="crypto-label">
+                        <span>Compact signature (Base64URL encoded)</span>
+                        <span class="badge">64 bytes raw</span>
+                        <button class="copy-btn" onclick="copyToClipboard('signatureValue')">Copy</button>
+                    </div>
+                    <div class="crypto-value" id="signatureValue">-</div>
+                </div>
+
+                <div class="step-navigation">
+                    <button class="nav-btn prev" onclick="goToStep(3)">
+                        ← Back to Digest
+                    </button>
+                    <button class="nav-btn next" onclick="processStep4()">
+                        Verify Signature →
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 5: Signature Verification -->
+            <div id="step5" class="step-content">
+                <div class="step-section">
+                    <h2><span class="step-badge step-5">5</span> Signature Verification</h2>
+                    
+                    <div class="alert info">
+                        Verification confirms the signature is valid. Any verifier can derive the same public key from the xpub using the payload digest, then verify the signature.
+                    </div>
+
+                    <div id="verificationResult" class="verification-status valid">
+                        <div class="verification-icon">⏳</div>
+                        <div class="verification-text">
+                            <h3>Verifying...</h3>
+                            <p>Computing verification</p>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-top: var(--spacing-lg);">Verification Steps</h3>
+                    <ol style="color: var(--text-secondary); line-height: 2; margin-left: var(--spacing-lg);">
+                        <li id="verifyStep1">Extract PayloadDigest from tags → <span class="status">pending</span></li>
+                        <li id="verifyStep2">Recompute digest from unsigned payload → <span class="status">pending</span></li>
+                        <li id="verifyStep3">Compare digests (must match) → <span class="status">pending</span></li>
+                        <li id="verifyStep4">Derive key index from digest → <span class="status">pending</span></li>
+                        <li id="verifyStep5">Derive verification key from xpub → <span class="status">pending</span></li>
+                        <li id="verifyStep6">Verify ECDSA signature → <span class="status">pending</span></li>
+                    </ol>
+
+                    <h3 style="margin-top: var(--spacing-lg);">Verification Summary</h3>
+                    <table class="field-mapping-table">
+                        <tbody>
+                            <tr>
+                                <td>Payload Digest (from tag)</td>
+                                <td id="verifyDigestTag">-</td>
+                            </tr>
+                            <tr>
+                                <td>Payload Digest (recomputed)</td>
+                                <td id="verifyDigestComputed">-</td>
+                            </tr>
+                            <tr>
+                                <td>Key Index (from tag)</td>
+                                <td id="verifyKeyIndexTag">-</td>
+                            </tr>
+                            <tr>
+                                <td>Key Index (derived)</td>
+                                <td id="verifyKeyIndexDerived">-</td>
+                            </tr>
+                            <tr>
+                                <td>Signature Valid</td>
+                                <td id="verifySigResult">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="step-navigation">
+                    <button class="nav-btn prev" onclick="goToStep(4)">
+                        ← Back to Signature
+                    </button>
+                    <button class="nav-btn next" onclick="processStep5()">
+                        View Final Transaction →
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 6: Final Transaction -->
+            <div id="step6" class="step-content">
+                <div class="step-section">
+                    <h2><span class="step-badge step-6">6</span> Final Arweave Transaction</h2>
+                    
+                    <div class="alert success" id="readyToPublish">
+                        ✅ Record is signed and ready to publish to the blockchain!
+                    </div>
+
+                    <h3 style="margin-top: var(--spacing-lg);">Transaction Tags</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: var(--spacing-sm);">
+                        These tags are stored on the Arweave transaction for indexing
+                    </p>
+                    <div class="tags-display" id="transactionTags">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <h3 style="margin-top: var(--spacing-lg);">Transaction Data</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: var(--spacing-sm);">
+                        This JSON is stored as the transaction's data payload
+                    </p>
+                    <div class="json-display" id="transactionData" style="max-height: 500px;"></div>
+
+                    <!-- Destination Selection -->
+                    <h3 style="margin-top: var(--spacing-lg);">Publishing Destinations</h3>
+                    <div class="destination-options" style="margin-top: var(--spacing-md);">
+                        <label class="destination-option">
+                            <input type="checkbox" id="destDebugArweave" checked>
+                            <span class="dest-icon">⛓️</span>
+                            <span class="dest-name">Arweave</span>
+                            <span class="dest-desc">Permanent blockchain storage</span>
+                        </label>
+                        <label class="destination-option">
+                            <input type="checkbox" id="destDebugGun" checked>
+                            <span class="dest-icon">🔄</span>
+                            <span class="dest-name">GUN</span>
+                            <span class="dest-desc">Real-time peer sync</span>
+                        </label>
+                        <label class="destination-option">
+                            <input type="checkbox" id="destDebugIA">
+                            <span class="dest-icon">🧅</span>
+                            <span class="dest-name">Internet Archive</span>
+                            <span class="dest-desc">Anonymous via TOR</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="step-navigation">
+                    <button class="nav-btn prev" onclick="goToStep(5)">
+                        ← Back to Verification
+                    </button>
+                    <button class="nav-btn approve" id="approveBtn" onclick="publishRecord()">
+                        ✅ Approve & Publish to Blockchain
+                    </button>
+                </div>
+
+                <!-- Publish Result -->
+                <div id="publishResult" class="hidden" style="margin-top: var(--spacing-lg);"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <span>OIP v0.9 Debug Interface</span>
+            <span class="separator">|</span>
+            <span>Powered by <a href="https://oip.io" target="_blank">Open Index Protocol</a></span>
+        </div>
+    </footer>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // OIP v0.9 Debug Interface - Client-Side Logic
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        const API_BASE = window.location.origin;
+        
+        // State
+        let currentStep = 1;
+        let state = {
+            mnemonic: null,
+            identity: null,
+            humanReadable: null,
+            oipFormat: null,
+            payloadDigest: null,
+            keyIndex: null,
+            signature: null,
+            signedPayload: null,
+            verificationResult: null
+        };
+
+        // POST Template field mappings (from docs/templates/post.md)
+        const POST_TEMPLATE = {
+            did: 'op6y-d_6bqivJ2a2oWQnbylD4X_LH6eQyR6rCGqtVZ8',
+            fields: {
+                webUrl: { index: 0, type: 'string' },
+                bylineWriter: { index: 1, type: 'string' },
+                bylineWritersTitle: { index: 2, type: 'string' },
+                bylineWritersLocation: { index: 3, type: 'string' },
+                articleText: { index: 4, type: 'dref' },
+                featuredImage: { index: 5, type: 'dref' },
+                imageItems: { index: 6, type: 'repeated dref' },
+                imageCaptionItems: { index: 7, type: 'repeated string' },
+                videoItems: { index: 8, type: 'repeated dref' },
+                audioItems: { index: 9, type: 'repeated dref' },
+                audioCaptionItems: { index: 10, type: 'repeated string' },
+                replyTo: { index: 11, type: 'dref' }
+            }
+        };
+
+        const BASIC_TEMPLATE = {
+            did: '-9DirnjVO1FlbEW1lN8jITBESrTsQKEM_BoZ1ey_0mk',
+            fields: {
+                name: { index: 0, type: 'string' },
+                description: { index: 1, type: 'string' },
+                date: { index: 2, type: 'string' },
+                language: { index: 3, type: 'string' },
+                tagItems: { index: 4, type: 'repeated string' },
+                nsfw: { index: 5, type: 'bool' },
+                replyTo: { index: 6, type: 'dref' },
+                citations: { index: 7, type: 'repeated dref' }
+            }
+        };
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // Navigation
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        function goToStep(step) {
+            if (step > 1 && !state.identity) {
+                showAlert('Please enter a mnemonic and create a record first', 'warning');
+                return;
+            }
+
+            // Update progress indicators
+            document.querySelectorAll('.step-indicator').forEach((el, i) => {
+                el.classList.remove('active');
+                if (i + 1 < step) {
+                    el.classList.add('completed');
+                } else if (i + 1 === step) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('completed');
+                }
+            });
+
+            // Show/hide content
+            document.querySelectorAll('.step-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.getElementById(`step${step}`).classList.add('active');
+
+            currentStep = step;
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // Step 1: Input Processing
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        async function processStep1() {
+            const mnemonic = document.getElementById('mnemonic').value.trim();
+            
+            if (!mnemonic || mnemonic.split(/\s+/).length < 12) {
+                showAlert('Please enter a valid BIP-39 mnemonic (12-24 words)', 'error');
+                return;
+            }
+
+            try {
+                // Call backend to create identity
+                const response = await fetch(`${API_BASE}/api/debug/identity`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mnemonic })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to create identity');
+                }
+
+                state.identity = await response.json();
+                state.mnemonic = mnemonic;
+
+                // Update identity display
+                document.getElementById('identityInfo').classList.remove('hidden');
+                document.getElementById('displayDid').textContent = state.identity.did;
+                document.getElementById('displayXpub').textContent = state.identity.signingXpub.substring(0, 40) + '...';
+
+                // Collect form data
+                state.humanReadable = {
+                    basic: {
+                        name: document.getElementById('postTitle').value,
+                        description: document.getElementById('postDescription').value,
+                        date: new Date().toISOString(),
+                        tagItems: document.getElementById('postTags').value.split(',').map(t => t.trim()).filter(Boolean)
+                    },
+                    post: {
+                        bylineWriter: document.getElementById('postByline').value,
+                        webUrl: document.getElementById('postWebUrl').value || undefined,
+                        articleText: document.getElementById('postContent').value
+                    }
+                };
+
+                // Transform to OIP format
+                await transformToOIPFormat();
+
+                goToStep(2);
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        async function transformToOIPFormat() {
+            // Build OIP v0.9 compressed format
+            const fragmentId = crypto.randomUUID();
+            
+            // Basic fragment
+            const basicRecord = { t: BASIC_TEMPLATE.did };
+            for (const [field, value] of Object.entries(state.humanReadable.basic)) {
+                if (value !== undefined && value !== '' && (!Array.isArray(value) || value.length > 0)) {
+                    const fieldDef = BASIC_TEMPLATE.fields[field];
+                    if (fieldDef) {
+                        basicRecord[fieldDef.index] = value;
+                    }
+                }
+            }
+
+            // Post fragment  
+            const postRecord = { t: POST_TEMPLATE.did };
+            for (const [field, value] of Object.entries(state.humanReadable.post)) {
+                if (value !== undefined && value !== '') {
+                    const fieldDef = POST_TEMPLATE.fields[field];
+                    if (fieldDef) {
+                        postRecord[fieldDef.index] = value;
+                    }
+                }
+            }
+
+            state.oipFormat = {
+                '@context': state.identity.did,
+                tags: [
+                    { name: 'Index-Method', value: 'OIP' },
+                    { name: 'Ver', value: '0.9.0' },
+                    { name: 'Content-Type', value: 'application/json' },
+                    { name: 'Creator', value: state.identity.did }
+                ],
+                fragments: [
+                    {
+                        id: fragmentId,
+                        dataType: 'Record',
+                        recordType: 'post',
+                        records: [basicRecord, postRecord]
+                    }
+                ]
+            };
+
+            // Update field mapping table
+            updateFieldMappingTable();
+
+            // Update JSON displays
+            document.getElementById('humanReadableJson').innerHTML = 
+                `<pre>${syntaxHighlight(JSON.stringify(state.humanReadable, null, 2))}</pre>`;
+            document.getElementById('compressedJson').innerHTML = 
+                `<pre>${syntaxHighlight(JSON.stringify(state.oipFormat, null, 2))}</pre>`;
+        }
+
+        function updateFieldMappingTable() {
+            const tbody = document.getElementById('fieldMappingBody');
+            tbody.innerHTML = '';
+
+            // Basic fields
+            for (const [field, value] of Object.entries(state.humanReadable.basic)) {
+                if (value !== undefined && value !== '') {
+                    const fieldDef = BASIC_TEMPLATE.fields[field];
+                    if (fieldDef) {
+                        const displayValue = Array.isArray(value) ? `[${value.join(', ')}]` : 
+                            (typeof value === 'string' && value.length > 40 ? value.substring(0, 40) + '...' : value);
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>basic.${field}</td>
+                                <td>${fieldDef.index}</td>
+                                <td>${displayValue}</td>
+                            </tr>
+                        `;
+                    }
+                }
+            }
+
+            // Post fields
+            for (const [field, value] of Object.entries(state.humanReadable.post)) {
+                if (value !== undefined && value !== '') {
+                    const fieldDef = POST_TEMPLATE.fields[field];
+                    if (fieldDef) {
+                        const displayValue = typeof value === 'string' && value.length > 40 ? 
+                            value.substring(0, 40) + '...' : value;
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>post.${field}</td>
+                                <td>${fieldDef.index}</td>
+                                <td>${displayValue}</td>
+                            </tr>
+                        `;
+                    }
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // Step 2 → 3: Compute Digest
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        async function processStep2() {
+            try {
+                const response = await fetch(`${API_BASE}/api/debug/digest`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ payload: state.oipFormat })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to compute digest');
+                }
+
+                const result = await response.json();
+                state.payloadDigest = result.payloadDigest;
+                state.keyIndex = result.keyIndex;
+                state.canonicalJson = result.canonicalJson;
+                state.derivationPath = result.derivationPath;
+
+                // Update displays
+                document.getElementById('canonicalJson').innerHTML = 
+                    `<pre>${escapeHtml(state.canonicalJson)}</pre>`;
+                document.getElementById('payloadDigestValue').textContent = state.payloadDigest;
+                document.getElementById('keyIndexValue').textContent = state.keyIndex;
+                document.getElementById('derivationPathValue').textContent = state.derivationPath;
+
+                goToStep(3);
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // Step 3 → 4: Generate Signature
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        async function processStep3() {
+            try {
+                const response = await fetch(`${API_BASE}/api/debug/sign`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        mnemonic: state.mnemonic,
+                        payload: state.oipFormat 
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to sign payload');
+                }
+
+                const result = await response.json();
+                state.signature = result.signature;
+                state.signedPayload = result.signedPayload;
+                state.derivedPublicKey = result.derivedPublicKey;
+                state.messageHash = result.messageHash;
+
+                // Update displays
+                document.getElementById('derivedPubKey').textContent = state.derivedPublicKey;
+                document.getElementById('messageHash').textContent = state.messageHash;
+                document.getElementById('signatureValue').textContent = state.signature;
+
+                goToStep(4);
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // Step 4 → 5: Verify Signature
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        async function processStep4() {
+            goToStep(5);
+            
+            // Animate verification steps
+            const steps = ['verifyStep1', 'verifyStep2', 'verifyStep3', 'verifyStep4', 'verifyStep5', 'verifyStep6'];
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/debug/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        signedPayload: state.signedPayload,
+                        xpub: state.identity.signingXpub
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Verification failed');
+                }
+
+                state.verificationResult = await response.json();
+
+                // Update verification steps with animation
+                for (let i = 0; i < steps.length; i++) {
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    const stepEl = document.getElementById(steps[i]);
+                    const status = state.verificationResult.steps[i];
+                    stepEl.querySelector('.status').textContent = status ? '✅' : '❌';
+                    stepEl.style.color = status ? 'var(--accent-success)' : 'var(--accent-error)';
+                }
+
+                // Update summary table
+                document.getElementById('verifyDigestTag').textContent = state.verificationResult.digestFromTag;
+                document.getElementById('verifyDigestComputed').textContent = state.verificationResult.digestComputed;
+                document.getElementById('verifyKeyIndexTag').textContent = state.verificationResult.keyIndexFromTag;
+                document.getElementById('verifyKeyIndexDerived').textContent = state.verificationResult.keyIndexDerived;
+                document.getElementById('verifySigResult').textContent = state.verificationResult.isValid ? '✅ VALID' : '❌ INVALID';
+                document.getElementById('verifySigResult').style.color = 
+                    state.verificationResult.isValid ? 'var(--accent-success)' : 'var(--accent-error)';
+
+                // Update verification status box
+                const resultBox = document.getElementById('verificationResult');
+                if (state.verificationResult.isValid) {
+                    resultBox.className = 'verification-status valid';
+                    resultBox.innerHTML = `
+                        <div class="verification-icon">✅</div>
+                        <div class="verification-text">
+                            <h3>Signature Valid</h3>
+                            <p>The record signature has been cryptographically verified</p>
+                        </div>
+                    `;
+                } else {
+                    resultBox.className = 'verification-status invalid';
+                    resultBox.innerHTML = `
+                        <div class="verification-icon">❌</div>
+                        <div class="verification-text">
+                            <h3>Signature Invalid</h3>
+                            <p>${state.verificationResult.error || 'Verification failed'}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // Step 5 → 6: View Final Transaction
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        function processStep5() {
+            // Display transaction tags
+            const tagsContainer = document.getElementById('transactionTags');
+            tagsContainer.innerHTML = state.signedPayload.tags.map(tag => `
+                <div class="tag-item">
+                    <span class="tag-name">${tag.name}</span>
+                    <span class="tag-value">${tag.value.length > 60 ? tag.value.substring(0, 60) + '...' : tag.value}</span>
+                </div>
+            `).join('');
+
+            // Display transaction data
+            const dataWithoutTags = { ...state.signedPayload };
+            delete dataWithoutTags.tags;
+            document.getElementById('transactionData').innerHTML = 
+                `<pre>${syntaxHighlight(JSON.stringify(state.signedPayload, null, 2))}</pre>`;
+
+            goToStep(6);
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // Final: Publish Record
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        async function publishRecord() {
+            const btn = document.getElementById('approveBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Publishing...';
+
+            try {
+                const destinations = {
+                    arweave: document.getElementById('destDebugArweave').checked,
+                    gun: document.getElementById('destDebugGun').checked,
+                    internetArchive: document.getElementById('destDebugIA').checked
+                };
+
+                const response = await fetch(`${API_BASE}/api/publish`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        record: state.signedPayload,
+                        destinations
+                    })
+                });
+
+                const result = await response.json();
+
+                const resultDiv = document.getElementById('publishResult');
+                resultDiv.classList.remove('hidden');
+
+                if (result.status === 'completed' || result.status === 'partial') {
+                    resultDiv.innerHTML = `
+                        <div class="alert success">
+                            <h3>🎉 Record Published Successfully!</h3>
+                            <p><strong>Submission ID:</strong> ${result.submissionId}</p>
+                            <div style="margin-top: var(--spacing-md);">
+                                ${result.results.arweave.status === 'success' ? 
+                                    `<p>⛓️ Arweave TX: <code>${result.results.arweave.txId || result.results.arweave.did}</code></p>` : ''}
+                                ${result.results.gun.status === 'success' ? 
+                                    `<p>🔄 GUN: <code>${result.results.gun.did}</code></p>` : ''}
+                                ${result.results.internetArchive.status === 'success' ? 
+                                    `<p>🧅 Internet Archive: <code>${result.results.internetArchive.did}</code></p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                    btn.textContent = '✅ Published!';
+                    btn.style.background = 'var(--accent-success)';
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="alert error">
+                            <h3>❌ Publishing Failed</h3>
+                            <p>${result.error || 'Unknown error'}</p>
+                            <pre>${JSON.stringify(result.results, null, 2)}</pre>
+                        </div>
+                    `;
+                    btn.disabled = false;
+                    btn.textContent = '✅ Approve & Publish to Blockchain';
+                }
+            } catch (error) {
+                document.getElementById('publishResult').innerHTML = `
+                    <div class="alert error">
+                        <h3>❌ Error</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+                document.getElementById('publishResult').classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = '✅ Approve & Publish to Blockchain';
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // Utilities
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        async function generateTestMnemonic() {
+            try {
+                const response = await fetch(`${API_BASE}/api/debug/generate-mnemonic`);
+                const result = await response.json();
+                document.getElementById('mnemonic').value = result.mnemonic;
+            } catch (error) {
+                showAlert('Failed to generate mnemonic: ' + error.message, 'error');
+            }
+        }
+
+        function syntaxHighlight(json) {
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, 
+                function (match) {
+                    let cls = 'json-number';
+                    if (/^"/.test(match)) {
+                        if (/:$/.test(match)) {
+                            cls = 'json-key';
+                        } else {
+                            cls = 'json-string';
+                        }
+                    } else if (/true|false/.test(match)) {
+                        cls = 'json-boolean';
+                    } else if (/null/.test(match)) {
+                        cls = 'json-null';
+                    }
+                    return '<span class="' + cls + '">' + escapeHtml(match) + '</span>';
+                }
+            );
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert ${type}`;
+            alertDiv.textContent = message;
+            alertDiv.style.position = 'fixed';
+            alertDiv.style.top = '100px';
+            alertDiv.style.left = '50%';
+            alertDiv.style.transform = 'translateX(-50%)';
+            alertDiv.style.zIndex = '1000';
+            alertDiv.style.maxWidth = '400px';
+            document.body.appendChild(alertDiv);
+            setTimeout(() => alertDiv.remove(), 4000);
+        }
+
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showAlert('Copied to clipboard!', 'success');
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // Initialize
+        // ═══════════════════════════════════════════════════════════════════════════════
+
+        document.getElementById('generateMnemonicBtn').addEventListener('click', generateTestMnemonic);
+
+        // Check TOR status
+        async function checkTorStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/api/tor/status`);
+                const status = await response.json();
+                const indicator = document.querySelector('.tor-indicator');
+                indicator.classList.toggle('connected', status.connected);
+                indicator.classList.toggle('disconnected', !status.connected);
+            } catch (e) {
+                document.querySelector('.tor-indicator').classList.add('disconnected');
+            }
+        }
+        checkTorStatus();
+        setInterval(checkTorStatus, 30000);
+    </script>
+</body>
+</html>

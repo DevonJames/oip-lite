@@ -1,0 +1,22 @@
+{ 
+        "Title": "basic.name",
+        "Description": "basic.description",
+        "ByLine": "post.bylineWriter",
+        "ByLineTitle": "post.bylineWritersTitle",
+        "ByLineLocation": "post.bylineWritersLocation",
+        "CanonicalUrl": "associatedURLOnWeb.url",
+        "AlternateUrls": "urlItems",
+        "TextBittorrentAddress": "text.bittorrentAddress",
+        "TextIpfsAddress": "text.ipfsAddress",
+        "TextArweaveAddress": "text.arweaveAddress",
+        "FeaturedImage": "post.featuredImage",
+        "EmbeddedImages": "post.imageItems",
+        "EmbeddedVideos": "post.videoItems",
+        "EmbeddedPosts": "post.citations",
+        "PublishedOnUtcEpoch": "basic.date",
+        "Tags": "basic.tagItems",
+        "Language": "basic.language",
+        "NSFW": "basic.nsfw",
+        "ReplyTo": "basic.replyTo",
+        "Citations": "basic.citations"
+}
