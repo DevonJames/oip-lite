@@ -1544,6 +1544,12 @@ if (ONION_PRESS_ENABLED) {
     app.get('/debug/v09', (req, res) => {
         res.sendFile(path.join(__dirname, 'public', 'debug', 'v09.html'));
     });
+    app.get('/debug', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'onion-press', 'debug.html'));
+    });
+    app.get('/debug.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'onion-press', 'debug.html'));
+    });
     
     // Serve onion-press subdirectory (always available at /onion-press)
     app.use('/onion-press', express.static(path.join(__dirname, 'public', 'onion-press'), {

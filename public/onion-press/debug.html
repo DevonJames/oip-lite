@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🔐 OIP v0.9 Debug Interface</title>
-    <link rel="stylesheet" href="css/onion-press.css">
+    <link rel="stylesheet" href="/onion-press/css/onion-press.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -552,7 +552,7 @@
                 <span class="logo-text">OIP v0.9 Debug</span>
             </div>
             <nav class="nav">
-                <a href="/" class="nav-btn">← Back to Onion Press</a>
+                <a href="/onion-press/" class="nav-btn">← Back to Onion Press</a>
             </nav>
             <div class="header-actions">
                 <div class="tor-status" id="torStatus" title="TOR Status">
@@ -570,6 +570,10 @@
             <div class="debug-header">
                 <h1>🔐 OIP v0.9 Cryptographic Debugger</h1>
                 <p>Step through the complete signing workflow for publishing POST records</p>
+                <div class="alert warning" style="text-align: left; margin-top: var(--spacing-lg);">
+                    This page is a cryptographic debug/publish tool for pre-signed v0.9 payloads.
+                    For creator DID registration, use <code>/register.html</code>.
+                </div>
             </div>
 
             <!-- Step Progress -->
@@ -893,15 +897,15 @@
                         </label>
                         <label class="destination-option">
                             <input type="checkbox" id="destDebugGun" checked>
-                            <span class="dest-icon">🔄</span>
-                            <span class="dest-name">GUN</span>
-                            <span class="dest-desc">Real-time peer sync</span>
+                            <span class="dest-icon">🌐</span>
+                            <span class="dest-name">This Host</span>
+                            <span class="dest-desc">Publish to local WordPress host</span>
                         </label>
                         <label class="destination-option">
-                            <input type="checkbox" id="destDebugIA">
+                            <input type="checkbox" id="destDebugIA" disabled>
                             <span class="dest-icon">🧅</span>
                             <span class="dest-name">Internet Archive</span>
-                            <span class="dest-desc">Anonymous via TOR</span>
+                            <span class="dest-desc">Not wired for `publishSigned`</span>
                         </label>
                     </div>
                 </div>
@@ -1346,15 +1350,15 @@
             try {
                 const destinations = {
                     arweave: document.getElementById('destDebugArweave').checked,
-                    gun: document.getElementById('destDebugGun').checked,
-                    internetArchive: document.getElementById('destDebugIA').checked
+                    thisHost: document.getElementById('destDebugGun').checked
                 };
 
-                const response = await fetch(`${API_BASE}/api/publish`, {
+                const response = await fetch(`${API_BASE}/api/records/publishSigned`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        record: state.signedPayload,
+                        payload: state.signedPayload,
+                        verifySignature: false,
                         destinations
                     })
                 });
@@ -1364,18 +1368,18 @@
                 const resultDiv = document.getElementById('publishResult');
                 resultDiv.classList.remove('hidden');
 
-                if (result.status === 'completed' || result.status === 'partial') {
+                if (result.success) {
+                    const arweaveSuccess = result.destinations?.arweave?.success;
+                    const thisHostSuccess = result.destinations?.thisHost?.success;
                     resultDiv.innerHTML = `
                         <div class="alert success">
                             <h3>🎉 Record Published Successfully!</h3>
-                            <p><strong>Submission ID:</strong> ${result.submissionId}</p>
+                            <p><strong>DID:</strong> ${result.did || 'n/a'}</p>
                             <div style="margin-top: var(--spacing-md);">
-                                ${result.results.arweave.status === 'success' ? 
-                                    `<p>⛓️ Arweave TX: <code>${result.results.arweave.txId || result.results.arweave.did}</code></p>` : ''}
-                                ${result.results.gun.status === 'success' ? 
-                                    `<p>🔄 GUN: <code>${result.results.gun.did}</code></p>` : ''}
-                                ${result.results.internetArchive.status === 'success' ? 
-                                    `<p>🧅 Internet Archive: <code>${result.results.internetArchive.did}</code></p>` : ''}
+                                ${arweaveSuccess ? 
+                                    `<p>⛓️ Arweave TX: <code>${result.destinations.arweave.transactionId || result.destinations.arweave.did}</code></p>` : ''}
+                                ${thisHostSuccess ? 
+                                    `<p>🌐 This Host: <code>${result.destinations.thisHost.postId || 'published'}</code></p>` : ''}
                             </div>
                         </div>
                     `;
@@ -1386,7 +1390,7 @@
                         <div class="alert error">
                             <h3>❌ Publishing Failed</h3>
                             <p>${result.error || 'Unknown error'}</p>
-                            <pre>${JSON.stringify(result.results, null, 2)}</pre>
+                            <pre>${JSON.stringify(result.destinations || result, null, 2)}</pre>
                         </div>
                     `;
                     btn.disabled = false;
@@ -1475,7 +1479,7 @@
         // Check TOR status
         async function checkTorStatus() {
             try {
-                const response = await fetch(`${API_BASE}/api/tor/status`);
+                const response = await fetch(`${API_BASE}/onion-press/api/tor/status`);
                 const status = await response.json();
                 const indicator = document.querySelector('.tor-indicator');
                 indicator.classList.toggle('connected', status.connected);
