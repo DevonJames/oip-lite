@@ -2,6 +2,9 @@
 # OIP LITE - Makefile
 # ═══════════════════════════════════════════════════════════════════════════════
 
+-include .env
+export
+
 .PHONY: up down rebuild logs logs-oip logs-gun logs-es shell status test clean help \
         up-ngrok down-ngrok
 
