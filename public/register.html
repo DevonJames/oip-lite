@@ -423,7 +423,8 @@
                     Fields like <code>did</code>, <code>controller</code>, <code>keyBindingPolicy</code>, <code>authentication</code> (set to "#sign"), 
                     and <code>assertionMethod</code> (set to "#sign") are automatically set according to the OIP v0.9 specification and are hidden from this form. 
                     The <code>verificationMethod</code> field will be automatically populated after your Verification Method is published.
-                    You can fill in optional profile fields like <code>oipHandle</code>, <code>oipName</code>, <code>oipSurname</code>, etc.
+                    Fill profile fields like <code>oipHandleRaw</code>, <code>oipName</code>, <code>oipSurname</code>, and <code>oipLanguage</code>.
+                    Advanced DID fields like <code>service</code> and <code>alsoKnownAs</code> are optional.
                 </div>
 
                 <div id="didDocumentForm">
@@ -603,7 +604,14 @@
                 ],
                 didDocument: [
                     'did', 'controller', 'keyBindingPolicy', 'verificationMethod',
-                    'authentication', 'assertionMethod'
+                    'authentication', 'assertionMethod',
+                    // Advanced technical field hidden to avoid user confusion in registration UI
+                    'keyAgreement',
+                    // Derived/legacy profile helpers - hide to avoid duplicate inputs
+                    'oipHandle',
+                    'oipSocialX', 'oipSocialYoutube', 'oipSocialInstagram', 'oipSocialTiktok',
+                    // Reserved/system-managed anchor field
+                    'anchorArweaveTxid'
                 ],
                 socialMedia: [
                     // All fields are handled by custom UI

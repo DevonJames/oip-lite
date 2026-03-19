@@ -1192,6 +1192,129 @@ function preComputeW3CFormat(record) {
     return w3c;
 }
 
+function normalizeOipHandle(rawHandle) {
+    return String(rawHandle || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '');
+}
+
+function deriveHandleSeedFromDid(did) {
+    const didTx = String(did || '').replace('did:arweave:', '');
+    const hexOnly = didTx.replace(/[^0-9a-fA-F]/g, '');
+
+    if (!hexOnly) {
+        return String(Date.now());
+    }
+
+    try {
+        return BigInt(`0x${hexOnly}`).toString();
+    } catch (_err) {
+        // Fallback for unexpected tx parsing edge cases
+        return String(Date.now());
+    }
+}
+
+function buildCanonicalDidService(record, recordId) {
+    const { getBaseUrlFromEnv } = require('./urlHelper');
+    const baseUrl = String(getBaseUrlFromEnv() || '').replace(/\/+$/, '');
+    const apiBase = `${baseUrl}/api`;
+    const didAddress = record?.data?.didDocument?.did || record?.oip?.creator?.didAddress || recordId;
+    const serviceId = didAddress ? `${didAddress}#oip-daemon` : '#oip-daemon';
+
+    return [
+        {
+            id: serviceId,
+            type: ['OIPDaemonService', 'LinkedDomains'],
+            serviceEndpoint: {
+                apiBase,
+                didResolver: `${apiBase}/did/{did}`,
+                records: `${apiBase}/records`,
+                creators: `${apiBase}/creators`,
+                creatorLookupByDidTemplate: `${apiBase}/records/creator/{didAddress}`,
+                publishSigned: `${apiBase}/records/publishSigned`,
+                publishAnonymous: `${apiBase}/records/publishAnonymous`
+            }
+        }
+    ];
+}
+
+async function doesDidHandleExist(handle, currentDid) {
+    const query = {
+        bool: {
+            must: [
+                { term: { 'oip.recordType.keyword': 'didDocument' } },
+                {
+                    bool: {
+                        should: [
+                            { term: { 'data.didDocument.oipHandle.keyword': handle } },
+                            { term: { 'data.didDocument.oipHandle': handle } }
+                        ],
+                        minimum_should_match: 1
+                    }
+                }
+            ],
+            must_not: currentDid ? [{ term: { 'oip.did.keyword': currentDid } }] : []
+        }
+    };
+
+    let response = await getElasticsearchClient().search({
+        index: 'records',
+        body: {
+            query,
+            size: 1
+        }
+    });
+
+    const exists = (response?.hits?.hits?.length || 0) > 0;
+    response = null; // MEMORY LEAK FIX: Release response buffer immediately
+    return exists;
+}
+
+async function ensureUniqueDidHandle(record, recordId) {
+    if (record?.oip?.recordType !== 'didDocument') return;
+
+    const didDocumentData = record?.data?.didDocument;
+    if (!didDocumentData || typeof didDocumentData !== 'object') return;
+
+    // Always strip incoming oipHandle from published payloads.
+    // Canonical oipHandle must always be derived server-side from oipHandleRaw.
+    delete didDocumentData.oipHandle;
+
+    const baseHandle = normalizeOipHandle(didDocumentData.oipHandleRaw);
+    if (!baseHandle) return;
+
+    const seed = deriveHandleSeedFromDid(recordId);
+    let digitsCount = 1;
+
+    while (digitsCount <= seed.length + 8) {
+        const suffix = seed.substring(0, digitsCount) || String(digitsCount);
+        const candidate = `${baseHandle}${suffix}`;
+        const isTaken = await doesDidHandleExist(candidate, recordId);
+
+        if (!isTaken) {
+            didDocumentData.oipHandle = candidate;
+            return;
+        }
+
+        digitsCount++;
+    }
+
+    // Safety fallback: this should be very unlikely to trigger
+    didDocumentData.oipHandle = `${baseHandle}${Date.now()}`;
+}
+
+function ensureCanonicalDidService(record, recordId) {
+    if (record?.oip?.recordType !== 'didDocument') return;
+
+    const didDocumentData = record?.data?.didDocument;
+    if (!didDocumentData || typeof didDocumentData !== 'object') return;
+
+    // Always strip incoming service values and assemble canonical instance-local endpoints at index time.
+    delete didDocumentData.service;
+    didDocumentData.service = buildCanonicalDidService(record, recordId);
+}
+
 const indexRecord = async (record) => {
     const recordId = record?.oip?.did || record?.oip?.didTx;
     debugLog(`\n      💾 [indexRecord] Attempting to index/update record: ${recordId}`);
@@ -1207,6 +1330,12 @@ const indexRecord = async (record) => {
         if (!recordId) {
             throw new Error('Record must have either oip.did or oip.didTx field');
         }
+
+        // For DID docs, enforce canonical fields at index time.
+        // - oipHandle: derived from oipHandleRaw (unique suffix)
+        // - service: assembled from instance-local API base and canonical endpoints
+        await ensureUniqueDidHandle(record, recordId);
+        ensureCanonicalDidService(record, recordId);
         
         // Look up template fields for this record type to enable smart type conversion
         let templateFields = null;
