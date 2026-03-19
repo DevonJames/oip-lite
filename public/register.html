@@ -1420,11 +1420,15 @@
                         const result = await publishResponse.json();
                         const txId = result.transactionId || result.did || result.didTx;
                         const did = result.did || `did:arweave:${txId}`;
+                        const immediateIndex = result?.destinations?.arweave?.indexedImmediately;
+                        const indexError = result?.destinations?.arweave?.indexError;
                         
                         results[name] = {
                             success: true,
                             txId: txId,
-                            did: did
+                            did: did,
+                            immediateIndex: immediateIndex === true,
+                            indexError: indexError || null
                         };
 
                         // Store verification method DID for reference in DID document
@@ -1459,7 +1463,15 @@
                 Object.entries(results).forEach(([name, result]) => {
                     if (result.success) {
                         html += `<p>✅ <strong>${name}</strong>: Published<br>`;
-                        html += `<code style="font-size: 0.85rem; word-break: break-all;">${result.did || result.txId}</code></p>`;
+                        html += `<code style="font-size: 0.85rem; word-break: break-all;">${result.did || result.txId}</code><br>`;
+                        if (result.immediateIndex) {
+                            html += `<small style="color: var(--accent-step-4);">Indexed immediately</small>`;
+                        } else if (result.indexError) {
+                            html += `<small style="color: var(--text-warning);">Published, indexing deferred: ${result.indexError}</small>`;
+                        } else {
+                            html += `<small style="color: var(--text-secondary);">Published, waiting for sync indexing</small>`;
+                        }
+                        html += `</p>`;
                     } else {
                         html += `<p>❌ <strong>${name}</strong>: Failed<br>`;
                         html += `<small style="color: var(--text-warning);">${result.error}</small></p>`;

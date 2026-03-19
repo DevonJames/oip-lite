@@ -8,6 +8,8 @@ const { findUserByEmail } = require('./user'); // Import user lookup function
 const { getRecords, searchRecordInDB, getRecordTypesSummary, deleteRecordsByDID, indexRecord, searchCreatorByAddress } = require('../../helpers/core/elasticsearch');
 // const { resolveRecords } = require('../../helpers/utils');
 const { publishNewRecord} = require('../../helpers/core/templateHelper');
+const { getCurrentBlockHeight } = require('../../helpers/core/arweave');
+const { V09_TEMPLATES, expandRecord } = require('../../config/templates-v09');
 // const paymentManager = require('../../helpers/payment-manager');
 // Lit Protocol is optional - lazy load only if needed
 let decryptContent;
@@ -49,6 +51,85 @@ async function getRecordByDidTx(didTx) {
     // Use the existing searchRecordInDB function
     const records = await getRecords({ didTx, limit: 1 });
     return records.records && records.records.length > 0 ? records.records[0] : null;
+}
+
+function stripDidPrefix(value) {
+    if (typeof value !== 'string') return value;
+    return value.startsWith('did:arweave:') ? value.replace('did:arweave:', '') : value;
+}
+
+function getTagValue(tags, name) {
+    return tags.find(t => t.name === name)?.value;
+}
+
+function resolveRecordTypeFromTemplateDid(templateDid) {
+    const didValue = String(templateDid || '');
+    for (const [recordType, schema] of Object.entries(V09_TEMPLATES)) {
+        if (schema.templateDid === didValue || stripDidPrefix(schema.templateDid) === stripDidPrefix(didValue)) {
+            return recordType;
+        }
+    }
+    return null;
+}
+
+function buildPendingRecordToIndexFromSignedPayload(payload, transactionId, inArweaveBlock) {
+    const tags = payload?.tags || [];
+    const creatorDid = getTagValue(tags, 'Creator');
+    const creatorSig = getTagValue(tags, 'CreatorSig');
+    const version = getTagValue(tags, 'Ver') || '0.9.0';
+    const fallbackRecordType = getTagValue(tags, 'RecordType');
+
+    const combinedData = {};
+    const templatesUsed = {};
+    const fragments = Array.isArray(payload?.fragments) ? payload.fragments : [];
+
+    for (const fragment of fragments) {
+        const fragmentRecordType = fragment?.recordType || fallbackRecordType;
+        const records = Array.isArray(fragment?.records) ? fragment.records : [];
+
+        for (const compressed of records) {
+            const templateDid = compressed?.t;
+            const resolvedRecordType = fragmentRecordType || resolveRecordTypeFromTemplateDid(templateDid);
+            if (!resolvedRecordType) continue;
+
+            const expanded = expandRecord(compressed, resolvedRecordType);
+            const expandedCopy = { ...expanded };
+            delete expandedCopy.t;
+
+            if (!combinedData[resolvedRecordType]) {
+                combinedData[resolvedRecordType] = {};
+            }
+            combinedData[resolvedRecordType] = {
+                ...combinedData[resolvedRecordType],
+                ...expandedCopy
+            };
+
+            if (templateDid) {
+                templatesUsed[resolvedRecordType] = stripDidPrefix(templateDid);
+            }
+        }
+    }
+
+    const primaryRecordType = Object.keys(combinedData)[0] || fallbackRecordType || 'unknown';
+    const did = `did:arweave:${transactionId}`;
+
+    return {
+        data: combinedData,
+        oip: {
+            did,
+            didTx: did, // Backward compatibility
+            inArweaveBlock,
+            indexedAt: new Date().toISOString(),
+            recordType: primaryRecordType,
+            recordStatus: 'pending confirmation in Arweave',
+            ver: version,
+            signature: creatorSig,
+            templates: templatesUsed,
+            creator: {
+                didAddress: creatorDid
+            }
+        }
+    };
 }
 
 router.get('/', optionalAuthenticateToken, enforceCalendarScope, async (req, res) => {
@@ -763,6 +844,34 @@ router.post('/publishSigned', async (req, res) => {
                     explorerUrl: `https://viewblock.io/arweave/tx/${result.id}`
                 };
                 console.log(`✅ [PublishSigned] Published to Arweave! TxID: ${result.id}`);
+
+                // Mirror newRecord behavior: index immediately as pending confirmation.
+                try {
+                    let currentBlock = await getCurrentBlockHeight();
+                    if (currentBlock === null) {
+                        currentBlock = 1;
+                    }
+
+                    const pendingRecord = buildPendingRecordToIndexFromSignedPayload(
+                        payload,
+                        result.id,
+                        currentBlock
+                    );
+
+                    if (pendingRecord?.oip?.did && pendingRecord?.oip?.recordType !== 'unknown') {
+                        await indexRecord(pendingRecord);
+                        publishResults.arweave.indexedImmediately = true;
+                        publishResults.arweave.recordToIndex = pendingRecord;
+                        console.log(`✅ [PublishSigned] Indexed pending record immediately: ${pendingRecord.oip.did}`);
+                    } else {
+                        console.warn('⚠️ [PublishSigned] Could not build pending record for immediate indexing');
+                        publishResults.arweave.indexedImmediately = false;
+                    }
+                } catch (indexError) {
+                    console.warn(`⚠️ [PublishSigned] Immediate indexing failed (will index on sync): ${indexError.message}`);
+                    publishResults.arweave.indexedImmediately = false;
+                    publishResults.arweave.indexError = indexError.message;
+                }
             } catch (error) {
                 console.error(`❌ [PublishSigned] Arweave publish failed:`, error.message);
                 publishResults.arweave = {
