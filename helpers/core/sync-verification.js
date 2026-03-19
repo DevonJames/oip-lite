@@ -145,7 +145,7 @@ async function verifyBeforeIndex(record, blockHeight) {
         // For v0.9+, verify signature
         console.log(`[SyncVerification] v${version} record - verifying signature`);
         
-        const result = await verifyRecord(record, resolveCreator, blockHeight);
+        const result = await verifyRecord(record, resolveCreatorWithBootstrap, blockHeight);
         
         if (!result.isValid) {
             console.error(`[SyncVerification] ❌ Verification failed: ${result.error}`);

@@ -1405,7 +1405,10 @@
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                payload: signedPayload
+                                payload: signedPayload,
+                                // Registration is self-bootstrapping: creator DID may not exist yet.
+                                // Defer strict signature verification to post-publish/indexing.
+                                verifySignature: false
                             })
                         });
 
