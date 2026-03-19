@@ -4,6 +4,83 @@ const { authenticateToken } = require('../../helpers/utils'); // Import the auth
 const { getTemplatesInDB } = require('../../helpers/core/elasticsearch');
 const { publishNewTemplate, publishNewTemplateV09, indexTemplate } = require('../../helpers/core/templateHelper');
 const templatesConfig = require('../../config/templates.config');
+const { V09_TEMPLATES } = require('../../config/templates-v09');
+
+function buildFieldsInTemplateFromRawFields(rawFields = {}) {
+    return Object.keys(rawFields).reduce((acc, key) => {
+        if (!key.startsWith('index_')) return acc;
+        const fieldName = key.replace('index_', '');
+        acc[fieldName] = {
+            type: rawFields[fieldName],
+            index: rawFields[key]
+        };
+
+        // Include enum values if present in the raw template payload
+        if (rawFields[fieldName] === 'enum') {
+            const enumValuesKey = `${fieldName}Values`;
+            if (rawFields[enumValuesKey]) {
+                acc[fieldName].enumValues = rawFields[enumValuesKey];
+            }
+        }
+        return acc;
+    }, {});
+}
+
+function normalizeTemplateForResponse(template) {
+    const normalized = JSON.parse(JSON.stringify(template));
+    const rawFields = (typeof normalized?.data?.fields === 'string')
+        ? JSON.parse(normalized.data.fields)
+        : (normalized?.data?.fields || {});
+
+    const fieldsInTemplate = buildFieldsInTemplateFromRawFields(rawFields);
+    normalized.data.fieldsInTemplate = fieldsInTemplate;
+    normalized.data.fieldsInTemplateCount = Object.keys(fieldsInTemplate).length;
+
+    if (!normalized.oip) {
+        normalized.oip = {};
+    }
+    normalized.oip.creator = {
+        didAddress: normalized?.data?.creator,
+        creatorSig: normalized?.data?.creatorSig
+    };
+
+    // Keep response shape consistent with existing behavior
+    delete normalized.data.creator;
+    delete normalized.data.creatorSig;
+
+    return normalized;
+}
+
+function getHardcodedV09Templates() {
+    return Object.entries(V09_TEMPLATES).map(([recordType, schema]) => {
+        const fields = {};
+        Object.entries(schema.fields).forEach(([index, field]) => {
+            fields[field.name] = field.type;
+            fields[`index_${field.name}`] = Number(index);
+        });
+
+        const rawTemplate = {
+            data: {
+                TxId: schema.templateDid.replace('did:arweave:', ''),
+                template: recordType,
+                recordType,
+                fields: JSON.stringify(fields)
+            },
+            oip: {
+                did: schema.templateDid,
+                didTx: schema.templateDid,
+                recordType: 'template',
+                recordStatus: 'hardcoded fallback',
+                indexedAt: new Date(0).toISOString(),
+                creator: {
+                    didAddress: 'did:arweave:hardcoded-v09'
+                }
+            }
+        };
+
+        return normalizeTemplateForResponse(rawTemplate);
+    });
+}
 
 
 router.get('/', async (req, res) => {
@@ -89,64 +166,18 @@ router.get('/', async (req, res) => {
             }
         }
 
-        templates.forEach(template => {
-            const fields = JSON.parse(template.data.fields);
-            const fieldsInTemplate = Object.keys(fields).reduce((acc, key) => {
-            if (key.startsWith('index_')) {
-                const fieldName = key.replace('index_', '');
-                acc[fieldName] = {
-                type: fields[fieldName],
-                index: fields[key]
-                };
-                
-                // Add enum values if this field is an enum type
-                if (fields[fieldName] === 'enum') {
-                    const enumValuesKey = `${fieldName}Values`;
-                    if (fields[enumValuesKey]) {
-                        acc[fieldName].enumValues = fields[enumValuesKey];
-                    } else if (template.data[enumValuesKey]) {
-                        acc[fieldName].enumValues = template.data[enumValuesKey];
-                    }
-                }
-            }
-            return acc;
-            }, {});
-            
-            template.data.fieldsInTemplate = fieldsInTemplate;
-            const fieldsInTemplateArray = Object.keys(fieldsInTemplate).map(key => {
-                const fieldInfo = {
-                    name: key,
-                    type: fieldsInTemplate[key].type,
-                    index: fieldsInTemplate[key].index
-                };
-                
-                // Include enum values in the array format as well
-                if (fieldsInTemplate[key].enumValues) {
-                    fieldInfo.enumValues = fieldsInTemplate[key].enumValues;
-                }
-                
-                return fieldInfo;
-            });
-            template.data.fieldsInTemplateCount = fieldsInTemplateArray.length;
+        templates = templates.map(template => normalizeTemplateForResponse(template));
 
-            // Move creator and creatorSig from data to oip
-            if (!template.oip) {
-            template.oip = {};
-            }
-            template.oip.creator = {
-            // creatorHandle: template.data.creatorHandle,
-            didAddress: template.data.creator,
-            creatorSig: template.data.creatorSig
-            };
-            // template.oip.creatorSig = template.data.creatorSig;
-
-            // Remove creator and creatorSig from data
-            delete template.data.creator;
-            delete template.data.creatorSig;
-
-            // Keep fields property - needed by translateJSONtoOIPData function
-            // delete template.data.fields;  // REMOVED: This was breaking nutritional info processing
-        });
+        // Add hardcoded v0.9 templates when they are not present in the DB.
+        // This keeps registration and schema lookup functional during bootstrap/index lag.
+        const existingTemplateNames = new Set(
+            templates
+                .map(template => template?.data?.template || template?.data?.recordType)
+                .filter(Boolean)
+        );
+        const missingV09Fallbacks = getHardcodedV09Templates()
+            .filter(template => !existingTemplateNames.has(template.data.template));
+        templates.push(...missingV09Fallbacks);
         // If the caller requests TypeScript types, generate and return them instead of the standard payload
         if (typeScriptTypes) {
             const typeMap = (fieldInfo) => {
@@ -279,6 +310,54 @@ router.get('/', async (req, res) => {
     } catch (error) {
         console.error('Error retrieving templates:', error);
         res.status(500).json({ error: 'Failed to retrieve templates' });
+    }
+});
+
+router.get('/:name', async (req, res) => {
+    try {
+        const lookupRaw = String(req.params.name || '').trim();
+        const lookup = lookupRaw.toLowerCase();
+
+        const { templatesInDB } = await getTemplatesInDB();
+        const normalizedTemplates = (templatesInDB || []).map(template => normalizeTemplateForResponse(template));
+        const fallbackTemplates = getHardcodedV09Templates();
+        const allTemplates = [...normalizedTemplates];
+
+        // Add fallback templates only when missing by name
+        const existingNames = new Set(
+            allTemplates
+                .map(template => template?.data?.template || template?.data?.recordType)
+                .filter(Boolean)
+        );
+        fallbackTemplates.forEach(template => {
+            if (!existingNames.has(template.data.template)) {
+                allTemplates.push(template);
+            }
+        });
+
+        const match = allTemplates.find(template => {
+            const templateName = String(template?.data?.template || template?.data?.recordType || '').toLowerCase();
+            const txId = String(template?.data?.TxId || '').toLowerCase();
+            const did = String(template?.oip?.did || template?.oip?.didTx || '').toLowerCase();
+            const didTx = did.replace(/^did:arweave:/, '');
+
+            return templateName === lookup || txId === lookup || did === lookup || didTx === lookup;
+        });
+
+        if (!match) {
+            return res.status(404).json({
+                error: 'Template not found',
+                message: `No template found for "${lookupRaw}"`
+            });
+        }
+
+        return res.status(200).json({
+            message: 'Template retrieved successfully',
+            template: match
+        });
+    } catch (error) {
+        console.error('Error retrieving template by name:', error);
+        return res.status(500).json({ error: 'Failed to retrieve template' });
     }
 });
 
