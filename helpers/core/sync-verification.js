@@ -26,7 +26,7 @@ async function resolveCreator(creatorDid) {
         // Try to find DID document (v0.9 format)
         const didDocResults = await getRecords({
             recordType: 'didDocument',
-            fieldName: 'oip.data.did',
+            fieldName: 'data.didDocument.did',
             fieldSearch: creatorDid,
             limit: 1
         });
@@ -35,7 +35,9 @@ async function resolveCreator(creatorDid) {
             const didDoc = didDocResults.records[0];
             
             // Get verification methods
-            const vmRefs = didDoc.oip?.data?.verificationMethod || [];
+            const vmRefs = didDoc?.data?.didDocument?.verificationMethod ||
+                           didDoc?.oip?.data?.verificationMethod ||
+                           [];
             const verificationMethods = await resolveVerificationMethods(vmRefs);
             
             return {
@@ -93,12 +95,15 @@ async function resolveVerificationMethods(vmRefs) {
             
             if (vmResults.records && vmResults.records.length > 0) {
                 const vm = vmResults.records[0];
+                const vmData = vm?.data?.didVerificationMethod || vm?.oip?.data || {};
                 methods.push({
-                    vmId: vm.oip?.data?.vmId,
-                    vmType: vm.oip?.data?.vmType,
-                    xpub: vm.oip?.data?.xpub,
-                    validFromBlock: vm.oip?.data?.validFromBlock || vm.oip?.blockHeight,
-                    revokedFromBlock: vm.oip?.data?.revokedFromBlock
+                    vmId: vmData.vmId,
+                    vmType: vmData.vmType,
+                    xpub: vmData.xpub,
+                    derivationPathPrefix: vmData.derivationPathPrefix,
+                    leafIndexPolicy: vmData.leafIndexPolicy,
+                    validFromBlock: vmData.validFromBlock || vm.oip?.inArweaveBlock || vm.oip?.blockHeight,
+                    revokedFromBlock: vmData.revokedFromBlock
                 });
             }
         } catch (error) {

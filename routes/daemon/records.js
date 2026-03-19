@@ -307,17 +307,39 @@ router.get('/creator/:didAddress', async (req, res) => {
         }
         
         console.log(`[Records API] Looking up creator: ${didAddress}`);
-        
-        const creatorData = await searchCreatorByAddress(didAddress);
-        
-        if (!creatorData) {
-            return res.status(404).json({ 
-                success: false,
-                error: 'Creator not found' 
+
+        // First try v0.9 DID resolver path (supports didDocument-based creators)
+        const { resolveCreatorWithBootstrap } = require('../../helpers/core/sync-verification');
+        const resolved = await resolveCreatorWithBootstrap(didAddress);
+        if (resolved) {
+            const didDocData = resolved?.didDocument?.data?.didDocument || {};
+            return res.status(200).json({
+                success: true,
+                creator: {
+                    did: resolved.did || didAddress,
+                    isV09: !!resolved.isV09,
+                    didDocumentDid: didDocData.did || null,
+                    didDocumentTx: resolved?.didDocument?.oip?.did || null,
+                    handle: didDocData.oipHandle || null,
+                    handleRaw: didDocData.oipHandleRaw || null,
+                    name: didDocData.oipName || null,
+                    surname: didDocData.oipSurname || null,
+                    language: didDocData.oipLanguage || null,
+                    verificationMethods: resolved.verificationMethods || []
+                }
             });
         }
-        
-        res.status(200).json({ 
+
+        // Legacy fallback (v0.8 creatorRegistration index)
+        const creatorData = await searchCreatorByAddress(didAddress);
+        if (!creatorData) {
+            return res.status(404).json({
+                success: false,
+                error: 'Creator not found'
+            });
+        }
+
+        res.status(200).json({
             success: true,
             creator: creatorData
         });

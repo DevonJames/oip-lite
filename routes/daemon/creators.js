@@ -1,6 +1,6 @@
 // routes/creators.js
 const express = require('express');
-const { getCreatorsInDB } = require('../../helpers/core/elasticsearch');
+const { getCreatorsInDB, getRecords } = require('../../helpers/core/elasticsearch');
 const { publishNewRecord } = require('../../helpers/core/templateHelper');
 const { authenticateToken } = require('../../helpers/utils'); // Import the authentication middleware
 const { Client } = require('@elastic/elasticsearch');
@@ -28,16 +28,53 @@ router.get('/', async (req, res) => {
         //     }
         // });
         // creatorRecords = creators.hits.hits.map(hit => hit._source);
-        const creators = await getCreatorsInDB()
-        res.status(200).json(
-            creators
-            // {
-            // qtyRecordsInDB: records.qtyRecordsInDB,
-            // maxArweaveBlockInDB: records.maxArweaveBlockInDB,
-            // qtyReturned: creatorRecords.length,
-            // creators: creatorRecords
-        // }
-    );
+        const creators = await getCreatorsInDB();
+
+        // Include v0.9 didDocument-based creators in this endpoint as well.
+        const didDocResults = await getRecords({
+            recordType: 'didDocument',
+            limit: 100
+        });
+
+        const v09Creators = (didDocResults?.records || []).map(record => {
+            const doc = record?.data?.didDocument || {};
+            return {
+                data: {
+                    creatorHandle: doc.oipHandle || null,
+                    creatorHandleRaw: doc.oipHandleRaw || null,
+                    didAddress: doc.did || null,
+                    didTx: record?.oip?.did || record?.oip?.didTx || null,
+                    publicKey: null,
+                    name: doc.oipName || null,
+                    surname: doc.oipSurname || null,
+                    language: doc.oipLanguage || null
+                },
+                oip: {
+                    recordType: 'didDocument',
+                    did: record?.oip?.did || null,
+                    didTx: record?.oip?.didTx || record?.oip?.did || null,
+                    inArweaveBlock: record?.oip?.inArweaveBlock || null,
+                    indexedAt: record?.oip?.indexedAt || null,
+                    creator: {
+                        creatorHandle: doc.oipHandle || null,
+                        didAddress: doc.did || null,
+                        didTx: record?.oip?.did || record?.oip?.didTx || null,
+                        publicKey: null
+                    }
+                }
+            };
+        });
+
+        const legacyCreators = creators?.creatorsInDB || [];
+        const combined = [...legacyCreators, ...v09Creators];
+
+        res.status(200).json({
+            ...creators,
+            qtyCreatorsInDB: combined.length,
+            qtyLegacyCreatorsInDB: legacyCreators.length,
+            qtyV09CreatorsInDB: v09Creators.length,
+            creatorsInDB: combined
+        });
         // res.status(200).json({ creators: creators.hits.hits });
     } catch (error) {
         console.error('Error retrieving creators:', error);
