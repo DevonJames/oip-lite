@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🪪 OIP DID Documents Explorer</title>
+    <link rel="stylesheet" href="/onion-press/css/onion-press.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent-did: #60a5fa;
+            --accent-handle: #34d399;
+            --font-mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+        }
+
+        .did-container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        .did-header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .did-header h1 {
+            font-size: 2rem;
+            margin-bottom: var(--spacing-sm);
+            background: linear-gradient(135deg, var(--accent-did), var(--accent-handle));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .did-header p {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+        }
+
+        .toolbar {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            display: grid;
+            grid-template-columns: 1fr auto auto auto;
+            gap: var(--spacing-sm);
+            align-items: center;
+        }
+
+        .toolbar input,
+        .toolbar select {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-md);
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+        }
+
+        .toolbar input:focus,
+        .toolbar select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .toolbar button {
+            background: var(--accent-primary);
+            border: none;
+            color: #fff;
+            border-radius: var(--radius-md);
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .toolbar button:hover {
+            background: var(--accent-secondary);
+        }
+
+        .stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+        }
+
+        .stat-pill {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 4px 10px;
+            color: var(--text-secondary);
+        }
+
+        .records {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+            gap: var(--spacing-md);
+        }
+
+        .did-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+        }
+
+        .did-card h3 {
+            margin-bottom: var(--spacing-sm);
+            color: var(--text-primary);
+            font-size: 1.05rem;
+            word-break: break-word;
+        }
+
+        .did-value {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--accent-did);
+            word-break: break-all;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 130px 1fr;
+            gap: 6px var(--spacing-sm);
+            margin: var(--spacing-md) 0;
+            font-size: 0.9rem;
+        }
+
+        .meta-label {
+            color: var(--text-muted);
+        }
+
+        .meta-value {
+            color: var(--text-primary);
+            word-break: break-word;
+        }
+
+        .handle {
+            font-family: var(--font-mono);
+            color: var(--accent-handle);
+            font-size: 0.85rem;
+        }
+
+        .link-row {
+            margin-top: var(--spacing-md);
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+        }
+
+        .link-btn {
+            display: inline-block;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            font-family: var(--font-mono);
+        }
+
+        .link-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        details {
+            margin-top: var(--spacing-md);
+            border-top: 1px solid var(--border-color);
+            padding-top: var(--spacing-sm);
+        }
+
+        summary {
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        pre {
+            margin-top: var(--spacing-sm);
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: var(--radius-md);
+            padding: var(--spacing-sm);
+            color: #c9d1d9;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            overflow: auto;
+            max-height: 280px;
+        }
+
+        .status {
+            text-align: center;
+            color: var(--text-muted);
+            padding: var(--spacing-xl);
+        }
+
+        .status.error {
+            color: var(--accent-error);
+        }
+
+        @media (max-width: 900px) {
+            .toolbar {
+                grid-template-columns: 1fr;
+            }
+
+            .records {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">🪪</span>
+                <span class="logo-text">DID Documents</span>
+            </div>
+            <nav class="nav">
+                <a href="/register.html" class="nav-btn">Creator Register</a>
+                <a href="/debug" class="nav-btn">Debug</a>
+                <a href="/onion-press/" class="nav-btn">Onion Press</a>
+            </nav>
+            <div class="header-actions">
+                <button id="refreshBtn" class="secondary-btn">Refresh</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="did-container">
+            <div class="did-header">
+                <h1>🪪 DID Documents Explorer</h1>
+                <p>Live view of `recordType=didDocument` data from this OIP node.</p>
+            </div>
+
+            <div class="toolbar">
+                <input id="searchInput" type="text" placeholder="Filter by DID, handle, name, or txid...">
+                <select id="statusFilter">
+                    <option value="">All statuses</option>
+                    <option value="pending confirmation in Arweave">Pending</option>
+                    <option value="confirmed in Arweave">Confirmed</option>
+                </select>
+                <select id="limitSelect">
+                    <option value="25">25</option>
+                    <option value="50" selected>50</option>
+                    <option value="100">100</option>
+                    <option value="250">250</option>
+                </select>
+                <button id="loadBtn">Load</button>
+            </div>
+
+            <div class="stats" id="stats"></div>
+            <div id="status" class="status">Loading DID documents...</div>
+            <div class="records" id="records"></div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <span>DID Documents Explorer</span>
+            <span class="separator">|</span>
+            <span>Data source: <code>/api/records?recordType=didDocument</code></span>
+        </div>
+    </footer>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let allRecords = [];
+
+        function setStatus(message, isError = false) {
+            const el = document.getElementById('status');
+            el.textContent = message;
+            el.className = isError ? 'status error' : 'status';
+            el.style.display = 'block';
+        }
+
+        function hideStatus() {
+            document.getElementById('status').style.display = 'none';
+        }
+
+        function safeJson(value) {
+            try {
+                return JSON.stringify(value, null, 2);
+            } catch {
+                return '{}';
+            }
+        }
+
+        function formatDate(value) {
+            if (!value) {
+                return '-';
+            }
+            const dt = new Date(value);
+            return Number.isNaN(dt.getTime()) ? String(value) : dt.toLocaleString();
+        }
+
+        function getDidDocument(record) {
+            return record?.data?.didDocument || {};
+        }
+
+        function getOip(record) {
+            return record?.oip || {};
+        }
+
+        function normalizeRecords(payload) {
+            if (Array.isArray(payload)) {
+                return payload;
+            }
+            if (Array.isArray(payload?.records)) {
+                return payload.records;
+            }
+            return [];
+        }
+
+        function applyFilters(records) {
+            const query = document.getElementById('searchInput').value.trim().toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+
+            return records.filter((record) => {
+                const didDocument = getDidDocument(record);
+                const oip = getOip(record);
+                const haystack = [
+                    didDocument.did,
+                    didDocument.oipHandle,
+                    didDocument.oipHandleRaw,
+                    didDocument.oipName,
+                    didDocument.oipSurname,
+                    oip.did,
+                    oip.didTx
+                ]
+                    .filter(Boolean)
+                    .join(' ')
+                    .toLowerCase();
+
+                const matchesQuery = !query || haystack.includes(query);
+                const matchesStatus = !statusFilter || oip.recordStatus === statusFilter;
+                return matchesQuery && matchesStatus;
+            });
+        }
+
+        function renderStats(records, filtered) {
+            const pending = records.filter((r) => getOip(r).recordStatus === 'pending confirmation in Arweave').length;
+            const confirmed = records.filter((r) => getOip(r).recordStatus === 'confirmed in Arweave').length;
+            const withService = records.filter((r) => Array.isArray(getDidDocument(r).service) && getDidDocument(r).service.length > 0).length;
+            const withHandle = records.filter((r) => !!getDidDocument(r).oipHandle).length;
+
+            document.getElementById('stats').innerHTML = `
+                <span class="stat-pill">Loaded: ${records.length}</span>
+                <span class="stat-pill">Showing: ${filtered.length}</span>
+                <span class="stat-pill">Pending: ${pending}</span>
+                <span class="stat-pill">Confirmed: ${confirmed}</span>
+                <span class="stat-pill">With service: ${withService}</span>
+                <span class="stat-pill">With oipHandle: ${withHandle}</span>
+            `;
+        }
+
+        function renderRecords(records) {
+            const container = document.getElementById('records');
+            container.innerHTML = '';
+
+            if (!records.length) {
+                setStatus('No DID documents matched your current filters.');
+                return;
+            }
+
+            hideStatus();
+
+            for (const record of records) {
+                const didDocument = getDidDocument(record);
+                const oip = getOip(record);
+                const did = didDocument.did || oip.did || '-';
+                const displayName = [didDocument.oipName, didDocument.oipSurname].filter(Boolean).join(' ').trim() || '(unnamed)';
+                const canonicalHandle = didDocument.oipHandle || '-';
+                const rawHandle = didDocument.oipHandleRaw || '-';
+                const vmCount = Array.isArray(didDocument.verificationMethod) ? didDocument.verificationMethod.length : 0;
+                const serviceCount = Array.isArray(didDocument.service) ? didDocument.service.length : 0;
+
+                const card = document.createElement('article');
+                card.className = 'did-card';
+                card.innerHTML = `
+                    <h3>${escapeHtml(displayName)}</h3>
+                    <div class="did-value">${escapeHtml(did)}</div>
+
+                    <div class="meta-grid">
+                        <div class="meta-label">Handle (raw)</div>
+                        <div class="meta-value handle">${escapeHtml(rawHandle)}</div>
+
+                        <div class="meta-label">Handle (canonical)</div>
+                        <div class="meta-value handle">${escapeHtml(canonicalHandle)}</div>
+
+                        <div class="meta-label">Language</div>
+                        <div class="meta-value">${escapeHtml(didDocument.oipLanguage || '-')}</div>
+
+                        <div class="meta-label">Key policy</div>
+                        <div class="meta-value">${escapeHtml(didDocument.keyBindingPolicy || '-')}</div>
+
+                        <div class="meta-label">Record status</div>
+                        <div class="meta-value">${escapeHtml(oip.recordStatus || '-')}</div>
+
+                        <div class="meta-label">Indexed at</div>
+                        <div class="meta-value">${escapeHtml(formatDate(oip.indexedAt))}</div>
+
+                        <div class="meta-label">Arweave block</div>
+                        <div class="meta-value">${escapeHtml(String(oip.inArweaveBlock || '-'))}</div>
+
+                        <div class="meta-label">Tx/DID id</div>
+                        <div class="meta-value did-value">${escapeHtml(oip.didTx || oip.did || '-')}</div>
+
+                        <div class="meta-label">verificationMethod</div>
+                        <div class="meta-value">${vmCount}</div>
+
+                        <div class="meta-label">service entries</div>
+                        <div class="meta-value">${serviceCount}</div>
+                    </div>
+
+                    <div class="link-row">
+                        <a class="link-btn" href="/api/records?recordType=didDocument&did=${encodeURIComponent(did)}" target="_blank">record query</a>
+                        <a class="link-btn" href="/api/did/${encodeURIComponent(did)}" target="_blank">did resolver</a>
+                        <a class="link-btn" href="/api/records/creator/${encodeURIComponent(did)}" target="_blank">creator lookup</a>
+                    </div>
+
+                    <details>
+                        <summary>Raw JSON</summary>
+                        <pre>${escapeHtml(safeJson(record))}</pre>
+                    </details>
+                `;
+
+                container.appendChild(card);
+            }
+        }
+
+        function escapeHtml(value) {
+            const div = document.createElement('div');
+            div.textContent = String(value ?? '');
+            return div.innerHTML;
+        }
+
+        async function loadDidDocuments() {
+            const limit = Number(document.getElementById('limitSelect').value || '50');
+            setStatus('Loading DID documents...');
+            document.getElementById('records').innerHTML = '';
+
+            try {
+                const url = `${API_BASE}/api/records?recordType=didDocument&limit=${encodeURIComponent(String(limit))}`;
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Request failed: ${response.status}`);
+                }
+
+                const payload = await response.json();
+                allRecords = normalizeRecords(payload);
+                const filtered = applyFilters(allRecords);
+                renderStats(allRecords, filtered);
+                renderRecords(filtered);
+            } catch (error) {
+                allRecords = [];
+                document.getElementById('stats').innerHTML = '';
+                document.getElementById('records').innerHTML = '';
+                setStatus(`Failed to load DID documents: ${error.message}`, true);
+            }
+        }
+
+        function rerenderFiltered() {
+            const filtered = applyFilters(allRecords);
+            renderStats(allRecords, filtered);
+            renderRecords(filtered);
+        }
+
+        document.getElementById('loadBtn').addEventListener('click', loadDidDocuments);
+        document.getElementById('refreshBtn').addEventListener('click', loadDidDocuments);
+        document.getElementById('searchInput').addEventListener('input', rerenderFiltered);
+        document.getElementById('statusFilter').addEventListener('change', rerenderFiltered);
+        document.getElementById('limitSelect').addEventListener('change', loadDidDocuments);
+
+        loadDidDocuments();
+    </script>
+</body>
+</html>

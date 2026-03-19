@@ -1495,6 +1495,17 @@
                     html += `</ul></div>`;
                 }
 
+                if (errors.length === 0) {
+                    const didDocumentDid = results?.didDocument?.did || '';
+                    html += `<div style="margin-top: var(--spacing-md); padding-top: var(--spacing-md); border-top: 1px solid var(--border-color);">`;
+                    html += `<strong>Next step:</strong> `;
+                    html += `<a href="/did-documents" target="_blank" style="color: var(--accent-primary);">Open DID Documents Explorer</a>`;
+                    if (didDocumentDid) {
+                        html += `<br><small>Direct record query: <a href="/api/records?recordType=didDocument&did=${encodeURIComponent(didDocumentDid)}" target="_blank" style="color: var(--accent-primary); font-family: var(--font-mono);">/api/records?recordType=didDocument&did=${didDocumentDid}</a></small>`;
+                    }
+                    html += `</div>`;
+                }
+
                 html += '</div>';
                 resultDiv.innerHTML = html;
 
