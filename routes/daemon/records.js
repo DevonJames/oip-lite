@@ -809,7 +809,7 @@ router.post('/publishSigned', async (req, res) => {
             { name: 'CreatorSig', value: creatorSig },
             { name: 'PayloadDigest', value: payloadDigest },
             { name: 'KeyIndex', value: keyIndex },
-            { name: 'App-Name', value: 'OIP-OnionPress' }
+            { name: 'App-Name', value: 'Alexandria' }
         ];
         
         // Add any additional tags from payload (except signature tags which we already added)
