@@ -1397,14 +1397,15 @@
                             throw new Error(error.error || 'Signing failed');
                         }
 
-                        const signedPayload = await signResponse.json();
+                        const signResult = await signResponse.json();
+                        const signedPayload = signResult.signedPayload || signResult;
                         
-                        // Publish to Arweave using /api/records/newRecord
-                        const publishResponse = await fetch(`${API_BASE}/api/records/newRecord?recordType=${template}`, {
+                        // Publish signed v0.9 payload using login-less endpoint
+                        const publishResponse = await fetch(`${API_BASE}/api/records/publishSigned`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                record: signedPayload
+                                payload: signedPayload
                             })
                         });
 
