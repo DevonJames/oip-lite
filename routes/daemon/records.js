@@ -89,7 +89,8 @@ function buildPendingRecordToIndexFromSignedPayload(payload, transactionId, inAr
 
         for (const compressed of records) {
             const templateDid = compressed?.t;
-            const resolvedRecordType = fragmentRecordType || resolveRecordTypeFromTemplateDid(templateDid);
+            // Prefer template DID for per-record expansion; fragment-level type is only a fallback.
+            const resolvedRecordType = resolveRecordTypeFromTemplateDid(templateDid) || fragmentRecordType;
             if (!resolvedRecordType) continue;
 
             const expanded = expandRecord(compressed, resolvedRecordType);
@@ -110,7 +111,8 @@ function buildPendingRecordToIndexFromSignedPayload(payload, transactionId, inAr
         }
     }
 
-    const primaryRecordType = Object.keys(combinedData)[0] || fallbackRecordType || 'unknown';
+    // Keep published RecordType tag as canonical type for filtering/search.
+    const primaryRecordType = fallbackRecordType || Object.keys(combinedData)[0] || 'unknown';
     const did = `did:arweave:${transactionId}`;
 
     return {
