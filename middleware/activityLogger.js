@@ -128,8 +128,13 @@ async function logActivity(req, res, duration, responseBody) {
         }
         
     } catch (error) {
-        // Silently fail - don't break the API if logging fails
-        console.error('Error in logActivity:', error);
+        // Silently fail - don't break the API if logging fails.
+        // Avoid spamming logs when ES is in flood-stage read-only mode.
+        const isClusterBlock = error?.meta?.body?.error?.type === 'cluster_block_exception'
+            || String(error?.message || '').includes('cluster_block_exception');
+        if (!isClusterBlock) {
+            console.error('Error in logActivity:', error);
+        }
     }
 }
 

@@ -1323,7 +1323,7 @@ const indexRecord = async (record) => {
         const typeForIndex = record?.oip?.recordType;
         if (typeForIndex && !shouldIndexRecordType(typeForIndex)) {
             debugLog(`      ⏭️  [indexRecord] Skipping indexing for recordType '${typeForIndex}' per configuration.`);
-            return;
+            return { success: false, skipped: true, reason: 'record type excluded by configuration' };
         }
         
         // Use unified DID field as primary identifier, fallback to didTx for backward compatibility
@@ -1375,7 +1375,8 @@ const indexRecord = async (record) => {
                 },
                 refresh: 'wait_for'
             });
-            debugLog(`      ✅ [indexRecord] Record UPDATED: ${recordId} (${response.result})`);    
+            debugLog(`      ✅ [indexRecord] Record UPDATED: ${recordId} (${response.result})`);
+            return { success: true, action: 'updated', result: response.result };
         } else {
             debugLog(`      ➕ [indexRecord] CREATING new record...`);
             // Create new record - but first process any JSON string arrays for Elasticsearch compatibility
@@ -1388,10 +1389,16 @@ const indexRecord = async (record) => {
                 refresh: 'wait_for' // Wait for indexing to be complete before returning
             });
             debugLog(`      ✅ [indexRecord] Record CREATED: ${recordId} (${response.result})`);
+            return { success: true, action: 'created', result: response.result };
         }
 
     } catch (error) {
         console.error(`      ❌ [indexRecord] Error indexing record ${recordId}:`, error.message);
+        return {
+            success: false,
+            error: error.message,
+            errorType: error?.meta?.body?.error?.type || null
+        };
     }
 };
 

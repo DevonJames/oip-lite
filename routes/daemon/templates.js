@@ -335,6 +335,24 @@ router.get('/:name', async (req, res) => {
             }
         });
 
+        const configuredTxId = templatesConfig?.defaultTemplates?.[lookup];
+        const configuredDid = configuredTxId ? `did:arweave:${configuredTxId}` : null;
+
+        // If this name exists in templates.config.js, prefer the canonical selected template.
+        if (configuredTxId) {
+            const canonicalMatch = allTemplates.find(template => {
+                const txId = String(template?.data?.TxId || '');
+                const did = String(template?.oip?.did || template?.oip?.didTx || '');
+                return txId === configuredTxId || did === configuredDid;
+            });
+            if (canonicalMatch) {
+                return res.status(200).json({
+                    message: 'Template retrieved successfully',
+                    template: canonicalMatch
+                });
+            }
+        }
+
         const match = allTemplates.find(template => {
             const templateName = String(template?.data?.template || template?.data?.recordType || '').toLowerCase();
             const txId = String(template?.data?.TxId || '').toLowerCase();

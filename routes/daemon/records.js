@@ -5,11 +5,12 @@ const { enforceCalendarScope } = require('../../middleware/auth'); // Import sco
 const { findUserByEmail } = require('./user'); // Import user lookup function
 
 // const path = require('path');
-const { getRecords, searchRecordInDB, getRecordTypesSummary, deleteRecordsByDID, indexRecord, searchCreatorByAddress } = require('../../helpers/core/elasticsearch');
+const { getRecords, searchRecordInDB, getRecordTypesSummary, deleteRecordsByDID, indexRecord, searchCreatorByAddress, searchTemplateByTxId } = require('../../helpers/core/elasticsearch');
 // const { resolveRecords } = require('../../helpers/utils');
 const { publishNewRecord} = require('../../helpers/core/templateHelper');
 const { getCurrentBlockHeight } = require('../../helpers/core/arweave');
 const { V09_TEMPLATES, expandRecord } = require('../../config/templates-v09');
+const { defaultTemplates } = require('../../config/templates.config');
 // const paymentManager = require('../../helpers/payment-manager');
 // Lit Protocol is optional - lazy load only if needed
 let decryptContent;
@@ -69,10 +70,87 @@ function resolveRecordTypeFromTemplateDid(templateDid) {
             return recordType;
         }
     }
+    const txId = stripDidPrefix(didValue);
+    if (!txId) return null;
+    for (const [recordType, configuredTxId] of Object.entries(defaultTemplates || {})) {
+        if (configuredTxId === txId) {
+            return recordType;
+        }
+    }
     return null;
 }
 
-function buildPendingRecordToIndexFromSignedPayload(payload, transactionId, inArweaveBlock) {
+function getFieldsInTemplateMap(templateDoc) {
+    const explicit = templateDoc?.data?.fieldsInTemplate;
+    if (explicit && typeof explicit === 'object' && Object.keys(explicit).length > 0) {
+        return explicit;
+    }
+
+    const rawFields = templateDoc?.data?.fields;
+    if (!rawFields) return null;
+
+    const parsedFields = typeof rawFields === 'string'
+        ? (() => {
+            try { return JSON.parse(rawFields); } catch (_) { return null; }
+        })()
+        : rawFields;
+
+    if (!parsedFields || typeof parsedFields !== 'object') return null;
+
+    const derived = {};
+    Object.keys(parsedFields).forEach((key) => {
+        if (!key.startsWith('index_')) return;
+        const fieldName = key.replace('index_', '');
+        const index = parsedFields[key];
+        if (index === undefined || index === null) return;
+        derived[fieldName] = {
+            type: parsedFields[fieldName] || 'string',
+            index
+        };
+    });
+    return Object.keys(derived).length ? derived : null;
+}
+
+async function expandCompressedRecordUsingTemplate(compressed, resolvedRecordType, templateCache) {
+    const templateDid = compressed?.t;
+    const templateTxId = stripDidPrefix(templateDid);
+
+    if (templateTxId) {
+        if (!templateCache.has(templateTxId)) {
+            let templateDoc = null;
+            try {
+                templateDoc = await searchTemplateByTxId(templateTxId);
+            } catch (_) {
+                templateDoc = null;
+            }
+            templateCache.set(templateTxId, templateDoc);
+        }
+
+        const templateDoc = templateCache.get(templateTxId);
+        const fieldsInTemplate = getFieldsInTemplateMap(templateDoc);
+        if (fieldsInTemplate) {
+            const indexToField = new Map();
+            Object.entries(fieldsInTemplate).forEach(([fieldName, info]) => {
+                const idx = info?.index;
+                if (idx !== undefined && idx !== null) {
+                    indexToField.set(String(idx), fieldName);
+                }
+            });
+
+            const expanded = { t: compressed.t };
+            for (const [index, value] of Object.entries(compressed || {})) {
+                if (index === 't') continue;
+                expanded[indexToField.get(index) || index] = value;
+            }
+            return expanded;
+        }
+    }
+
+    // Fallback for hardcoded v0.9 schemas when template docs are unavailable.
+    return expandRecord(compressed, resolvedRecordType);
+}
+
+async function buildPendingRecordToIndexFromSignedPayload(payload, transactionId, inArweaveBlock) {
     const tags = payload?.tags || [];
     const creatorDid = getTagValue(tags, 'Creator');
     const creatorSig = getTagValue(tags, 'CreatorSig');
@@ -82,6 +160,7 @@ function buildPendingRecordToIndexFromSignedPayload(payload, transactionId, inAr
     const combinedData = {};
     const templatesUsed = {};
     const fragments = Array.isArray(payload?.fragments) ? payload.fragments : [];
+    const templateCache = new Map();
 
     for (const fragment of fragments) {
         const fragmentRecordType = fragment?.recordType || fallbackRecordType;
@@ -93,7 +172,7 @@ function buildPendingRecordToIndexFromSignedPayload(payload, transactionId, inAr
             const resolvedRecordType = resolveRecordTypeFromTemplateDid(templateDid) || fragmentRecordType;
             if (!resolvedRecordType) continue;
 
-            const expanded = expandRecord(compressed, resolvedRecordType);
+            const expanded = await expandCompressedRecordUsingTemplate(compressed, resolvedRecordType, templateCache);
             const expandedCopy = { ...expanded };
             delete expandedCopy.t;
 
@@ -876,17 +955,24 @@ router.post('/publishSigned', async (req, res) => {
                         currentBlock = 1;
                     }
 
-                    const pendingRecord = buildPendingRecordToIndexFromSignedPayload(
+                    const pendingRecord = await buildPendingRecordToIndexFromSignedPayload(
                         payload,
                         result.id,
                         currentBlock
                     );
 
                     if (pendingRecord?.oip?.did && pendingRecord?.oip?.recordType !== 'unknown') {
-                        await indexRecord(pendingRecord);
-                        publishResults.arweave.indexedImmediately = true;
-                        publishResults.arweave.recordToIndex = pendingRecord;
-                        console.log(`✅ [PublishSigned] Indexed pending record immediately: ${pendingRecord.oip.did}`);
+                        const indexResult = await indexRecord(pendingRecord);
+                        if (indexResult?.success) {
+                            publishResults.arweave.indexedImmediately = true;
+                            publishResults.arweave.recordToIndex = pendingRecord;
+                            console.log(`✅ [PublishSigned] Indexed pending record immediately: ${pendingRecord.oip.did}`);
+                        } else {
+                            publishResults.arweave.indexedImmediately = false;
+                            publishResults.arweave.indexError = indexResult?.error || indexResult?.reason || 'Immediate indexing did not complete';
+                            publishResults.arweave.indexErrorType = indexResult?.errorType || null;
+                            console.warn(`⚠️ [PublishSigned] Immediate indexing did not complete: ${publishResults.arweave.indexError}`);
+                        }
                     } else {
                         console.warn('⚠️ [PublishSigned] Could not build pending record for immediate indexing');
                         publishResults.arweave.indexedImmediately = false;
