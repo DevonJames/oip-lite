@@ -168,6 +168,50 @@ body.rc-app .publish-form {
     border-radius: 12px;
 }
 
+body.rc-app .publish-form h3 {
+    color: #f8fafc;
+    letter-spacing: 0.01em;
+}
+
+body.rc-app .publish-form small {
+    color: #94a3b8;
+}
+
+body.rc-app .publish-form input::placeholder,
+body.rc-app .publish-form textarea::placeholder {
+    color: rgba(203, 213, 225, 0.52);
+}
+
+body.rc-app .media-section {
+    background: rgba(15, 23, 42, 0.72) !important;
+    border: 1px solid rgba(148, 163, 184, 0.25) !important;
+    border-left: 3px solid rgba(129, 140, 248, 0.75) !important;
+    border-radius: 12px !important;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.2);
+}
+
+body.rc-app .media-section h4 {
+    color: #e2e8f0 !important;
+}
+
+body.rc-app #gun-options {
+    background: rgba(30, 41, 59, 0.66) !important;
+    border: 1px solid rgba(129, 140, 248, 0.4) !important;
+    border-radius: 12px !important;
+}
+
+body.rc-app #gun-options h4 {
+    color: #c7d2fe !important;
+}
+
+body.rc-app #x-post-interface > div,
+body.rc-app #web-article-preview,
+body.rc-app #x-post-preview {
+    background: rgba(15, 23, 42, 0.72) !important;
+    border: 1px solid rgba(148, 163, 184, 0.3) !important;
+    color: #cbd5e1 !important;
+}
+
 body.rc-app .publish-progress {
     background: rgba(15, 23, 42, 0.9);
     border: 1px solid rgba(148, 163, 184, 0.32);

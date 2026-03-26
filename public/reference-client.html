@@ -23118,15 +23118,17 @@ CRITICAL:
             if (!response.ok) {
                 throw new Error(`Template "${templateName}" not found`);
             }
-            return response.json();
+            const payload = await response.json();
+            return payload?.template || payload;
         }
 
         function convertRecordToCompressedWithTemplate(record, template) {
             const fieldsInTemplate = template?.data?.fieldsInTemplate || template?.fieldsInTemplate || {};
-            const templateDid = template?.oip?.didTx || template?.oip?.did;
+            const templateDid = template?.oip?.didTx || template?.oip?.did || (template?.data?.TxId ? `did:arweave:${template.data.TxId}` : null);
+            const templateName = template?.data?.template || template?.data?.recordType || 'unknown template';
 
             if (!templateDid) {
-                throw new Error(`Template DID missing for ${template?.data?.template || 'unknown template'}`);
+                throw new Error(`Template DID missing for ${templateName}`);
             }
 
             const compressed = { t: templateDid };
