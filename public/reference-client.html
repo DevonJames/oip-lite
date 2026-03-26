@@ -4209,6 +4209,12 @@
                             </select>
                         </div>
                         <div class="header-control-group">
+                            <label for="voice-record-type-filter-header">Filter By</label>
+                            <select id="voice-record-type-filter-header" onchange="applyVoiceFilters()">
+                                <option value="" selected>All</option>
+                            </select>
+                        </div>
+                        <div class="header-control-group">
                             <label for="voice-view-as">View As</label>
                             <select id="voice-view-as" onchange="changeViewMode()">
                                 <option value="grid">Grid</option>
@@ -4243,7 +4249,7 @@
                 
                 <div id="publishing-content" class="hidden">
                     <div class="filters-row">
-                        <button onclick="showCreatorRegistration()">Register Creator</button>
+                        <button onclick="window.location.href='/register.html'">Register Creator</button>
                         <button onclick="showTemplateCreation()">Create Template</button>
                         <button onclick="showRecordPublishing()">Publish Record</button>
                     </div>
@@ -4356,6 +4362,12 @@
                             <strong>GUN + BitTorrent:</strong> Private storage with automatic BitTorrent distribution for P2P sharing<br>
                             <strong>Irys:</strong> Permanent, fast confirmation
                         </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="publish-v09-mnemonic">v0.9 Signing Mnemonic:</label>
+                        <textarea id="publish-v09-mnemonic" rows="2" placeholder="Enter 12-24 word mnemonic used for signing"></textarea>
+                        <small>Used for all signed v0.9 publish operations in this tab.</small>
                     </div>
 
                 <!-- Dynamic Publishing Interface -->
@@ -4682,6 +4694,26 @@
             includeSigs: false,
             includePubKeys: false
         };
+        const SHORT_RECORD_TYPE_FILTER_OPTIONS = [
+            'basic',
+            'post',
+            'text',
+            'image',
+            'video',
+            'audio',
+            'recipe',
+            'workout',
+            'exercise',
+            'fitnessEquipment',
+            'organization',
+            'multiResolutionGif',
+            'music',
+            'musicReleaseSimple',
+            'didDocument',
+            'didVerificationMethod',
+            'socialMedia',
+            'communication'
+        ];
         let availableTags = [];
 
         // Initialize the app
@@ -4751,6 +4783,7 @@
                     
                     // Populate all record type dropdowns
                     populateAllRecordTypeDropdowns(data.recordTypes);
+                    populateHeaderRecordTypeFilter(data.recordTypes);
                     
                     console.log('[App] Populated record type dropdowns with', recordTypes.length, 'types');
                 } else {
@@ -4758,12 +4791,14 @@
                     // Fallback to basic types if API fails
                     recordTypes = ['post', 'video', 'image', 'recipe', 'workout'];
                     populateAllRecordTypeDropdowns(recordTypes.map(type => ({ recordType: type, count: 0 })));
+                    populateHeaderRecordTypeFilter(recordTypes.map(type => ({ recordType: type, count: 0 })));
                 }
             } catch (error) {
                 console.error('[App] Error loading record types:', error);
                 // Fallback to basic types if API fails
                 recordTypes = ['post', 'video', 'image', 'recipe', 'workout'];
                 populateAllRecordTypeDropdowns(recordTypes.map(type => ({ recordType: type, count: 0 })));
+                populateHeaderRecordTypeFilter(recordTypes.map(type => ({ recordType: type, count: 0 })));
             }
         }
 
@@ -4806,6 +4841,48 @@
             
             // Populate categories grid
             populateCategoriesGrid(recordTypesData);
+        }
+
+        function formatRecordTypeLabel(recordType) {
+            if (!recordType) return '';
+            return recordType
+                .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+                .replace(/[_-]+/g, ' ')
+                .replace(/\b\w/g, (ch) => ch.toUpperCase());
+        }
+
+        function populateHeaderRecordTypeFilter(recordTypesData) {
+            const headerSelect = document.getElementById('voice-record-type-filter-header');
+            if (!headerSelect) return;
+
+            const available = new Set((recordTypesData || []).map((rt) => rt.recordType));
+            const ordered = [];
+
+            SHORT_RECORD_TYPE_FILTER_OPTIONS.forEach((recordType) => {
+                if (available.has(recordType)) {
+                    ordered.push(recordType);
+                }
+            });
+
+            if (ordered.length === 0 && recordTypesData?.length) {
+                recordTypesData
+                    .map((rt) => rt.recordType)
+                    .slice(0, 25)
+                    .forEach((recordType) => ordered.push(recordType));
+            }
+
+            const currentValue = headerSelect.value;
+            headerSelect.innerHTML = '<option value="">All</option>';
+            ordered.forEach((recordType) => {
+                const option = document.createElement('option');
+                option.value = recordType;
+                option.textContent = formatRecordTypeLabel(recordType);
+                headerSelect.appendChild(option);
+            });
+
+            if (ordered.includes(currentValue)) {
+                headerSelect.value = currentValue;
+            }
         }
         
         // Populate the categories grid dynamically from recordTypes
@@ -5593,11 +5670,17 @@
                 console.log('[Search] 🎵 Searching for records with embedded audio content (any record type that contains audio)');
                 // Don't set record type filter for audio
                 document.getElementById('voice-record-type-filter').value = '';
+                if (document.getElementById('voice-record-type-filter-header')) {
+                    document.getElementById('voice-record-type-filter-header').value = '';
+                }
                 // Enable the "Includes Audio" toggle
                 document.getElementById('voice-includes-audio-toggle').classList.add('active');
             } else {
                 // Set the record type filter for other types
                 document.getElementById('voice-record-type-filter').value = recordType;
+                if (document.getElementById('voice-record-type-filter-header')) {
+                    document.getElementById('voice-record-type-filter-header').value = recordType;
+                }
                 // Clear the "Includes Audio" toggle
                 document.getElementById('voice-includes-audio-toggle').classList.remove('active');
             }
@@ -14421,6 +14504,9 @@ Return ONLY a valid JSON object with the field values, no additional text or exp
             }
             if (appliedFilters.recordType) {
                 document.getElementById('voice-record-type-filter').value = appliedFilters.recordType;
+                if (document.getElementById('voice-record-type-filter-header')) {
+                    document.getElementById('voice-record-type-filter-header').value = appliedFilters.recordType;
+                }
             }
             if (appliedFilters.sortBy) {
                 document.getElementById('voice-sort-by').value = appliedFilters.sortBy;
@@ -14479,6 +14565,9 @@ Return ONLY a valid JSON object with the field values, no additional text or exp
             }
             if (filters.recordType) {
                 document.getElementById('voice-record-type-filter').value = filters.recordType;
+                if (document.getElementById('voice-record-type-filter-header')) {
+                    document.getElementById('voice-record-type-filter-header').value = filters.recordType;
+                }
             }
             if (filters.sortBy) {
                 document.getElementById('voice-sort-by').value = filters.sortBy;
@@ -15495,7 +15584,15 @@ Return ONLY a valid JSON object with the field values, no additional text or exp
             // Update the main currentFilters object to work with enhanced system
             currentFilters.search = document.getElementById('voice-search-input').value.trim();
             currentFilters.searchMatchMode = document.getElementById('voice-search-match-mode').value;
-            currentFilters.recordType = document.getElementById('voice-record-type-filter').value;
+            const drawerRecordType = document.getElementById('voice-record-type-filter')?.value || '';
+            const headerRecordType = document.getElementById('voice-record-type-filter-header')?.value || '';
+            currentFilters.recordType = headerRecordType || drawerRecordType;
+            if (document.getElementById('voice-record-type-filter')) {
+                document.getElementById('voice-record-type-filter').value = currentFilters.recordType;
+            }
+            if (document.getElementById('voice-record-type-filter-header')) {
+                document.getElementById('voice-record-type-filter-header').value = currentFilters.recordType;
+            }
             currentFilters.source = document.getElementById('voice-storage-filter').value; // NEW: Storage type filter
             currentFilters.sortBy = document.getElementById('voice-sort-by').value;
             currentFilters.resolveDepth = parseInt(document.getElementById('voice-resolve-depth').value) || 2;
@@ -15577,6 +15674,9 @@ Return ONLY a valid JSON object with the field values, no additional text or exp
             document.getElementById('voice-search-input').value = '';
             document.getElementById('voice-search-match-mode').value = 'AND';
             document.getElementById('voice-record-type-filter').value = '';
+            if (document.getElementById('voice-record-type-filter-header')) {
+                document.getElementById('voice-record-type-filter-header').value = '';
+            }
             document.getElementById('voice-storage-filter').value = 'all'; // NEW: Reset storage filter
             document.getElementById('voice-sort-by').value = 'matchCount:desc';
             document.getElementById('voice-resolve-depth').value = '2';
@@ -23075,6 +23175,108 @@ CRITICAL:
             }
         }
 
+        function getPublishSigningMnemonic() {
+            return document.getElementById('publish-v09-mnemonic')?.value?.trim() || '';
+        }
+
+        function normalizeTemplateRecord(record) {
+            if (Array.isArray(record)) {
+                return record.length > 0 ? record[0] : null;
+            }
+            return record || null;
+        }
+
+        async function publishSignedTemplateBundle(recordType, recordData, options = {}) {
+            const mnemonic = options.mnemonic || getPublishSigningMnemonic();
+            if (!mnemonic || mnemonic.split(/\s+/).length < 12) {
+                throw new Error('A valid 12-24 word v0.9 signing mnemonic is required.');
+            }
+
+            const templateNames = Object.keys(recordData).filter((key) => {
+                if (['accessControl', 'storage', 'blockchain', 'publishTo'].includes(key)) {
+                    return false;
+                }
+                return !!normalizeTemplateRecord(recordData[key]);
+            });
+
+            if (!templateNames.length) {
+                throw new Error('No template records found to publish.');
+            }
+
+            const templateMap = {};
+            for (const templateName of templateNames) {
+                templateMap[templateName] = await fetchTemplateForSignedPost(templateName);
+            }
+
+            const compressedRecords = [];
+            for (const templateName of templateNames) {
+                const normalizedRecord = normalizeTemplateRecord(recordData[templateName]);
+                if (!normalizedRecord) {
+                    continue;
+                }
+                compressedRecords.push(convertRecordToCompressedWithTemplate(normalizedRecord, templateMap[templateName]));
+            }
+
+            const base = getPublishApiBase();
+            const identityResponse = await fetch(`${base}/api/debug/identity`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mnemonic })
+            });
+            if (!identityResponse.ok) {
+                const error = await identityResponse.json().catch(() => ({}));
+                throw new Error(error.message || error.error || 'Failed to derive identity from mnemonic');
+            }
+            const identity = await identityResponse.json();
+
+            const payload = {
+                '@context': identity.did,
+                tags: [
+                    { name: 'Index-Method', value: 'OIP' },
+                    { name: 'Ver', value: '0.9.0' },
+                    { name: 'Content-Type', value: 'application/json' },
+                    { name: 'Creator', value: identity.did },
+                    { name: 'RecordType', value: recordType }
+                ],
+                fragments: [
+                    {
+                        id: crypto.randomUUID(),
+                        dataType: 'Record',
+                        recordType,
+                        records: compressedRecords
+                    }
+                ]
+            };
+
+            const signResponse = await fetch(`${base}/api/debug/sign`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mnemonic, payload })
+            });
+            if (!signResponse.ok) {
+                const error = await signResponse.json().catch(() => ({}));
+                throw new Error(error.message || error.error || 'Signing failed');
+            }
+            const signResult = await signResponse.json();
+            const signedPayload = signResult?.signedPayload || signResult;
+
+            const publishResponse = await fetch(`${base}/api/records/publishSigned`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    payload: signedPayload,
+                    verifySignature: false,
+                    destinations: options.destinations || { arweave: true }
+                })
+            });
+            const publishResult = await publishResponse.json();
+            if (!publishResponse.ok || !publishResult?.success) {
+                throw new Error(publishResult?.message || publishResult?.error || 'Signed publish failed');
+            }
+
+            return publishResult;
+        }
+
         // Publishing functions for each record type
         async function publishPost() {
             try {
@@ -23089,7 +23291,7 @@ CRITICAL:
                 const replyTo = document.getElementById('post-reply-to')?.value?.trim() || '';
                 const postVideoUrl = document.getElementById('post-video-url')?.value?.trim() || '';
                 const postImageUrl = document.getElementById('post-image-url')?.value?.trim() || '';
-                const mnemonic = document.getElementById('post-signing-mnemonic')?.value?.trim() || '';
+                const mnemonic = document.getElementById('post-signing-mnemonic')?.value?.trim() || getPublishSigningMnemonic();
                 const nsfw = !!document.getElementById('post-nsfw')?.checked;
                 const includeText = !!document.getElementById('post-include-text')?.checked;
                 const includeVideo = !!document.getElementById('post-include-video')?.checked;
@@ -23341,25 +23543,21 @@ CRITICAL:
                     return;
                 }
 
-                const response = await fetch('/api/publish/newVideo', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify(videoData)
-                });
+                const recordData = {
+                    basic: videoData.basicMetadata,
+                    video: {
+                        webUrl: videoData.youtubeUrl || '',
+                        contentType: 'video/mp4',
+                        duration: videoData.videoMetadata?.duration || null,
+                        creator: videoData.videoMetadata?.uploader || ''
+                    }
+                };
 
-                const result = await response.json();
-                
-                if (response.ok) {
-                    showMessage('publish-success', `Video published successfully! Transaction ID: ${result.transactionId}`, 'success');
-                    // Clear form
-                    document.getElementById('publish-record-type').value = '';
-                    loadPublishInterface();
-                } else {
-                    showMessage('publish-status', result.error || 'Failed to publish video', 'error');
-                }
+                const result = await publishSignedTemplateBundle('video', recordData);
+                const did = result.did || 'n/a';
+                showMessage('publish-success', `Video published successfully! DID: ${did}`, 'success');
+                document.getElementById('publish-record-type').value = '';
+                loadPublishInterface();
             } catch (error) {
                 showMessage('publish-status', 'Network error: ' + error.message, 'error');
             }
@@ -23629,46 +23827,16 @@ CRITICAL:
                     }
                 }
 
-                // Determine endpoint and storage type
-                let endpoint, queryParams;
-                
-                if (storageType === 'gun') {
-                    endpoint = '/api/records/newRecord';
-                    queryParams = `?recordType=${audioType}&storage=gun`;
-                    if (uploadedMediaId) {
-                        queryParams += `&localId=audio_${uploadedMediaId}`;
-                    }
-                } else {
-                    endpoint = '/api/records/newRecord';
-                    queryParams = `?recordType=${audioType}&storage=arweave`;
-                }
-
-                // Add storage info to record data
-                recordData.storage = storageType;
-                if (storageType !== 'gun') {
-                    recordData.blockchain = storageType;
-                }
-
                 console.log('🎵 Publishing audio record:', {
                     audioType,
                     audioSource,
                     storageType,
-                    endpoint: endpoint + queryParams,
                     hasUploadedFile: !!uploadedMediaId
                 });
 
-                const response = await fetch(endpoint + queryParams, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify(recordData)
-                });
+                const result = await publishSignedTemplateBundle(audioType, recordData);
 
-                const result = await response.json();
-                
-                if (response.ok) {
+                if (result?.success) {
                     // Update progress if uploading
                     if (audioSource === 'upload') {
                         const progressDiv = document.getElementById('audio-upload-progress');
@@ -23678,9 +23846,7 @@ CRITICAL:
                         progressText.textContent = 'Audio published successfully!';
                     }
 
-                    const successMessage = storageType === 'gun' 
-                        ? `${audioType.charAt(0).toUpperCase() + audioType.slice(1)} published to GUN! DID: ${result.did}` 
-                        : `${audioType.charAt(0).toUpperCase() + audioType.slice(1)} published successfully! Transaction ID: ${result.transactionId}`;
+                    const successMessage = `${audioType.charAt(0).toUpperCase() + audioType.slice(1)} published successfully! DID: ${result.did || 'n/a'}`;
                     
                     showMessage('publish-success', successMessage, 'success');
                     
@@ -23699,7 +23865,7 @@ CRITICAL:
                         loadPublishInterface();
                     }, 3000);
                 } else {
-                    showMessage('publish-status', result.error || `Failed to publish ${audioType}`, 'error');
+                    showMessage('publish-status', `Failed to publish ${audioType}`, 'error');
                 }
             } catch (error) {
                 console.error('Audio publishing error:', error);
@@ -23804,24 +23970,15 @@ CRITICAL:
                     return;
                 }
 
-                const response = await fetch('/api/publish/newRecipe', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify(recipeData)
-                });
-
-                const result = await response.json();
+                const result = await publishSignedTemplateBundle('recipe', recipeData);
                 
-                if (response.ok) {
-                    showMessage('publish-success', `Recipe published successfully! Transaction ID: ${result.transactionId}`, 'success');
+                if (result?.success) {
+                    showMessage('publish-success', `Recipe published successfully! DID: ${result.did || 'n/a'}`, 'success');
                     // Clear form
                     document.getElementById('publish-record-type').value = '';
                     loadPublishInterface();
                 } else {
-                    showMessage('publish-status', result.error || 'Failed to publish recipe', 'error');
+                    showMessage('publish-status', 'Failed to publish recipe', 'error');
                 }
             } catch (error) {
                 showMessage('publish-status', 'Network error: ' + error.message, 'error');
@@ -23830,30 +23987,7 @@ CRITICAL:
 
         async function publishText() {
             try {
-                if (!authToken) {
-                    showMessage('publish-status', 'JWT token required for publishing. Please set your token first.', 'error');
-                    return;
-                }
-
-                // Get storage type to determine if access control should be included
                 const storageType = document.getElementById('publish-storage-type')?.value || 'arweave';
-                
-                let accessLevel = 'public'; // Default for Arweave
-                let selectedOrganizationDid = null;
-                
-                // Only get access level and organization for GUN storage
-                if (storageType === 'gun') {
-                    accessLevel = document.getElementById('text-access-level')?.value || 'public';
-                    
-                    // Get organization selection if needed
-                    if (accessLevel === 'organization') {
-                        selectedOrganizationDid = document.getElementById('text-organization')?.value;
-                        if (!selectedOrganizationDid) {
-                            showMessage('publish-status', 'Please select an organization when using Organization access level', 'error');
-                            return;
-                        }
-                    }
-                }
 
                 const textData = {
                     basic: {
@@ -23871,14 +24005,6 @@ CRITICAL:
                     }
                 };
 
-                // Only add accessControl for GUN storage (private records)
-                if (storageType === 'gun') {
-                    textData.accessControl = {
-                        access_level: accessLevel,
-                        shared_with: selectedOrganizationDid // Organization's DID if selected
-                    };
-                }
-
                 if (!textData.basic.name) {
                     showMessage('publish-status', 'Please fill in document title', 'error');
                     return;
@@ -23889,42 +24015,19 @@ CRITICAL:
                     return;
                 }
 
-                const localId = document.getElementById('gun-local-id')?.value?.trim() || null;
+                const result = await publishSignedTemplateBundle('text', textData);
                 
-                // Always use /api/records/newRecord for text publishing
-                const endpoint = '/api/records/newRecord';
-                const queryParams = `?recordType=text${localId ? `&localId=${localId}` : ''}`;
-
-                const requestBody = { ...textData };
-                if (storageType === 'gun') {
-                    requestBody.storage = 'gun';
-                    if (localId) requestBody.localId = localId;
-                } else {
-                    requestBody.blockchain = storageType;
-                }
-
-                const response = await fetch(`${endpoint}${queryParams}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                const result = await response.json();
-                
-                if (response.ok) {
-                    const successMessage = storageType === 'gun' 
-                        ? `Text published to GUN! DID: ${result.did}` 
-                        : `Text published to Arweave! Transaction ID: ${result.transactionId}`;
+                if (result?.success) {
+                    const successMessage = storageType === 'gun'
+                        ? `Text published (signed v0.9)! DID: ${result.did || 'n/a'}`
+                        : `Text published (signed v0.9)! DID: ${result.did || 'n/a'}`;
                     showMessage('publish-success', successMessage, 'success');
                     
                     // Clear form
                     document.getElementById('publish-record-type').value = '';
                     loadPublishInterface();
                 } else {
-                    showMessage('publish-status', result.error || 'Failed to publish text', 'error');
+                    showMessage('publish-status', 'Failed to publish text', 'error');
                 }
             } catch (error) {
                 showMessage('publish-status', 'Network error: ' + error.message, 'error');
@@ -23967,24 +24070,15 @@ CRITICAL:
                     return;
                 }
 
-                const response = await fetch('/api/publish/newWorkout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify(workoutData)
-                });
-
-                const result = await response.json();
+                const result = await publishSignedTemplateBundle('workout', workoutData);
                 
-                if (response.ok) {
-                    showMessage('publish-success', `Workout published successfully! Transaction ID: ${result.transactionId}`, 'success');
+                if (result?.success) {
+                    showMessage('publish-success', `Workout published successfully! DID: ${result.did || 'n/a'}`, 'success');
                     // Clear form
                     document.getElementById('publish-record-type').value = '';
                     loadPublishInterface();
                 } else {
-                    showMessage('publish-status', result.error || 'Failed to publish workout', 'error');
+                    showMessage('publish-status', 'Failed to publish workout', 'error');
                 }
             } catch (error) {
                 showMessage('publish-status', 'Exercise resolution error: ' + error.message, 'error');
@@ -23993,12 +24087,6 @@ CRITICAL:
 
         async function publishExercise() {
             try {
-                if (!authToken) {
-                    showMessage('publish-status', 'JWT token required for publishing. Please set your token first.', 'error');
-                    return;
-                }
-
-                // Get storage type to determine if access control should be included
                 const storageType = document.getElementById('publish-storage-type')?.value || 'arweave';
                 
                 let accessLevel = 'public'; // Default for Arweave
@@ -24054,58 +24142,25 @@ CRITICAL:
                     }
                 };
 
-                // Only add accessControl for GUN storage (private records)
-                if (storageType === 'gun') {
-                    exerciseData.accessControl = {
-                        access_level: accessLevel,
-                        shared_with: selectedOrganizationDid // Organization's DID if selected
-                    };
-                }
-
                 if (!exerciseData.basic.name || exerciseData.exercise.instructions.length === 0) {
                     showMessage('publish-status', 'Please fill in exercise name and instructions', 'error');
                     return;
                 }
 
-                // Get local ID for GUN storage
-                const localId = document.getElementById('gun-local-id')?.value?.trim() || null;
+                console.log('🚀 Publishing exercise record (signed v0.9):', JSON.stringify(exerciseData, null, 2));
+                const result = await publishSignedTemplateBundle('exercise', exerciseData);
                 
-                // Always use /api/records/newRecord for exercise publishing
-                const endpoint = '/api/records/newRecord';
-                const queryParams = `?recordType=exercise${localId ? `&localId=${localId}` : ''}`;
-
-                const requestBody = { ...exerciseData };
-                if (storageType === 'gun') {
-                    requestBody.storage = 'gun';
-                    if (localId) requestBody.localId = localId;
-                } else {
-                    requestBody.blockchain = storageType;
-                }
-
-                console.log('🚀 Publishing exercise record:', JSON.stringify(requestBody, null, 2));
-
-                const response = await fetch(`${endpoint}${queryParams}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                const result = await response.json();
-                
-                if (response.ok) {
-                    const successMessage = storageType === 'gun' 
-                        ? `Exercise published to GUN! DID: ${result.did}` 
-                        : `Exercise published to Arweave! Transaction ID: ${result.transactionId}`;
+                if (result?.success) {
+                    const successMessage = storageType === 'gun'
+                        ? `Exercise published (signed v0.9)! DID: ${result.did || 'n/a'}`
+                        : `Exercise published (signed v0.9)! DID: ${result.did || 'n/a'}`;
                     showMessage('publish-success', successMessage, 'success');
                     
                     // Clear form
                     document.getElementById('publish-record-type').value = '';
                     loadPublishInterface();
                 } else {
-                    showMessage('publish-status', result.error || 'Failed to publish exercise', 'error');
+                    showMessage('publish-status', 'Failed to publish exercise', 'error');
                 }
             } catch (error) {
                 showMessage('publish-status', 'Network error: ' + error.message, 'error');
@@ -24114,12 +24169,6 @@ CRITICAL:
 
         async function publishFitnessEquipment() {
             try {
-                if (!authToken) {
-                    showMessage('publish-status', 'JWT token required for publishing. Please set your token first.', 'error');
-                    return;
-                }
-
-                // Get storage type to determine if access control should be included
                 const storageType = document.getElementById('publish-storage-type')?.value || 'arweave';
                 
                 let accessLevel = 'public'; // Default for Arweave
@@ -24166,54 +24215,23 @@ CRITICAL:
                     }
                 };
 
-                // Only add accessControl for GUN storage (private records)
-                if (storageType === 'gun') {
-                    equipmentData.accessControl = {
-                        access_level: accessLevel,
-                        shared_with: selectedOrganizationDid // Organization's DID if selected
-                    };
-                }
-
                 if (!equipmentData.basic.name) {
                     showMessage('publish-status', 'Please fill in equipment name', 'error');
                     return;
                 }
-                const localId = document.getElementById('gun-local-id')?.value?.trim() || null;
+                const result = await publishSignedTemplateBundle('fitnessEquipment', equipmentData);
                 
-                // Always use /api/records/newRecord for fitness equipment publishing
-                const endpoint = '/api/records/newRecord';
-                const queryParams = `?recordType=fitnessEquipment${localId ? `&localId=${localId}` : ''}`;
-
-                const requestBody = { ...equipmentData };
-                if (storageType === 'gun') {
-                    requestBody.storage = 'gun';
-                    if (localId) requestBody.localId = localId;
-                } else {
-                    requestBody.blockchain = storageType;
-                }
-
-                const response = await fetch(`${endpoint}${queryParams}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                const result = await response.json();
-                
-                if (response.ok) {
-                    const successMessage = storageType === 'gun' 
-                        ? `Equipment published to GUN! DID: ${result.did}` 
-                        : `Equipment published to Arweave! Transaction ID: ${result.transactionId}`;
+                if (result?.success) {
+                    const successMessage = storageType === 'gun'
+                        ? `Equipment published (signed v0.9)! DID: ${result.did || 'n/a'}`
+                        : `Equipment published (signed v0.9)! DID: ${result.did || 'n/a'}`;
                     showMessage('publish-success', successMessage, 'success');
                     
                     // Clear form
                     document.getElementById('publish-record-type').value = '';
                     loadPublishInterface();
                 } else {
-                    showMessage('publish-status', result.error || 'Failed to publish equipment', 'error');
+                    showMessage('publish-status', 'Failed to publish equipment', 'error');
                 }
             } catch (error) {
                 showMessage('publish-status', 'Network error: ' + error.message, 'error');
@@ -24497,24 +24515,7 @@ CRITICAL:
                     }
                 }
 
-                // Use the standard record publishing endpoint
-                const endpoint = '/api/records/newRecord';
-                const queryParams = `?recordType=${recordType}&storage=${storageType}`;
-
-                const recordResponse = await fetch(endpoint + queryParams, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify(recordData)
-                });
-
-                const recordResult = await recordResponse.json();
-
-                if (!recordResponse.ok) {
-                    throw new Error(recordResult.error || 'Failed to create OIP record');
-                }
+                const recordResult = await publishSignedTemplateBundle(recordType, recordData);
 
                 progressFill.style.width = '100%';
                 progressText.textContent = 'Upload complete!';
@@ -24528,7 +24529,7 @@ CRITICAL:
                 showMessage('publish-success', 
                     `${recordType.charAt(0).toUpperCase() + recordType.slice(1)} published successfully!\\n` +
                     `Record Type: ${recordType}\\n` +
-                    `DID: ${recordResult.did}\\n` +
+                    `DID: ${recordResult.did || 'n/a'}\\n` +
                     `Media ID: ${uploadResult.mediaId}\\n` +
                     `Size: ${(file.size / 1024).toFixed(1)} KB\\n` +
                     storageSummary, 'success');
@@ -24537,7 +24538,7 @@ CRITICAL:
                 showMediaPreview({
                     ...uploadResult,
                     recordType: recordType,
-                    recordDid: recordResult.did,
+                    recordDid: recordResult.did || null,
                     dimensions: { width, height, duration },
                     ipfsAddress: ipfsAddress,
                     webUrl: webUrl,
@@ -25007,22 +25008,10 @@ CRITICAL:
 
                             // Step 4: Publish complete OIP record to selected storage type
                             publishBtn.textContent = `📋 Creating record for ${task.file.name}...`;
-                            const recordResponse = await fetch(`/api/records/newRecord?recordType=image${storageType === 'gun' ? '&storage=gun' : ''}`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${authToken}`
-                                },
-                                body: JSON.stringify(recordData)
-                            });
-
-                            const recordResult = await recordResponse.json();
-                            if (!recordResponse.ok) {
-                                throw new Error(`Record creation failed: ${recordResult.error}`);
-                            }
+                            const recordResult = await publishSignedTemplateBundle('image', recordData);
 
                             // Get the DID from response (format depends on storage type)
-                            const recordDid = recordResult.did || (recordResult.transactionId ? `did:arweave:${recordResult.transactionId}` : null);
+                            const recordDid = recordResult.did || null;
                             
                             if (!recordDid) {
                                 throw new Error(`No DID or transactionId in response for ${task.label}`);
@@ -25109,32 +25098,13 @@ CRITICAL:
                     };
                 }
 
-                // Publish to selected storage type for multi-resolution GIF collections
-                const localId = document.getElementById('gun-local-id')?.value?.trim() || null;
-                const queryParams = `?recordType=multiResolutionGif${storageType === 'gun' ? '&storage=gun' : ''}${localId ? `&localId=${localId}` : ''}`;
-
-                const requestBody = { ...gifData };
-                if (storageType === 'gun') {
-                    requestBody.storage = 'gun';
-                }
-                if (localId) requestBody.localId = localId;
-
-                const response = await fetch(`/api/records/newRecord${queryParams}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                const result = await response.json();
+                const result = await publishSignedTemplateBundle('multiResolutionGif', gifData);
                 
-                if (response.ok) {
+                if (result?.success) {
                     publishBtn.textContent = '✅ Published Successfully!';
                     showMessage('publish-success', 
                         `GIF collection published successfully!\\n` +
-                        `Collection DID: ${result.did}\\n` +
+                        `Collection DID: ${result.did || 'n/a'}\\n` +
                         `Image Records: ${gifRefs.length}\\n` +
                         `Method: ${inputMethod === 'upload' ? 'File Upload' : 'Manual DID Entry'}`, 'success');
                     
@@ -25145,7 +25115,7 @@ CRITICAL:
                     }, 3000);
                 } else {
                     publishBtn.textContent = originalBtnText;
-                    showMessage('publish-status', result.error || 'Failed to publish GIF collection', 'error');
+                    showMessage('publish-status', 'Failed to publish GIF collection', 'error');
                 }
             } catch (error) {
                 publishBtn.textContent = originalBtnText;
@@ -25506,39 +25476,20 @@ CRITICAL:
                     requestBody.blockchain = storageType;
                 }
 
-                // Determine endpoint based on storage type
-                const endpoint = storageType === 'gun' ? '/api/records/newRecord' : '/api/organizations/newOrganization';
-                const queryParams = storageType === 'gun' ? `?recordType=organization${localId ? `&localId=${localId}` : ''}` : '';
-
-                console.log('[Organization] Publishing with data:', requestBody);
-                console.log('[Organization] Using endpoint:', endpoint + queryParams);
-
-                const response = await fetch(`${endpoint}${queryParams}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                const result = await response.json();
+                console.log('[Organization] Publishing with signed v0.9 payload:', requestBody);
+                const result = await publishSignedTemplateBundle('organization', requestBody);
                 
-                if (response.ok) {
-                    // Handle different response formats for different storage types
-                    let successMessage;
-                    if (storageType === 'gun') {
-                        successMessage = `Organization registered in GUN! DID: ${result.did}${result.encrypted ? ' (Encrypted)' : ''}`;
-                    } else {
-                        successMessage = `Organization registered successfully! Transaction ID: ${result.transactionId}`;
-                    }
+                if (result?.success) {
+                    const successMessage = storageType === 'gun'
+                        ? `Organization registered (signed v0.9)! DID: ${result.did || 'n/a'}`
+                        : `Organization registered (signed v0.9)! DID: ${result.did || 'n/a'}`;
                     showMessage('publish-success', successMessage, 'success');
                     
                     // Clear form
                     document.getElementById('publish-record-type').value = '';
                     loadPublishInterface();
                 } else {
-                    showMessage('publish-status', result.error || 'Failed to register organization', 'error');
+                    showMessage('publish-status', 'Failed to register organization', 'error');
                 }
             } catch (error) {
                 console.error('[Organization] Publishing error:', error);
