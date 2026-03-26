@@ -1,0 +1,205 @@
+/* Reference Client modern override layer
+ * Loaded after inline legacy styles to unify visual theme.
+ */
+
+body.rc-app {
+    background: radial-gradient(1200px 600px at 25% 0%, #11203e 0%, #090b14 55%, #06070c 100%);
+    color: #e5e7eb;
+    font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+body.rc-app .header {
+    background: rgba(8, 12, 24, 0.92);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.28);
+    backdrop-filter: blur(8px);
+}
+
+body.rc-app .header-content {
+    max-width: 1440px;
+}
+
+body.rc-app .logo-area {
+    color: #f8fafc;
+    text-shadow: none;
+    font-weight: 500;
+    letter-spacing: 2px;
+}
+
+body.rc-app nav .nav-link {
+    color: #c7d2fe;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 6px 12px;
+    background: transparent;
+}
+
+body.rc-app nav .nav-link:hover,
+body.rc-app nav .nav-link.active {
+    color: #ffffff;
+    border-color: rgba(99, 102, 241, 0.45);
+    background: rgba(99, 102, 241, 0.22);
+}
+
+body.rc-app .header-search input {
+    background: rgba(2, 8, 23, 0.66);
+    border-color: rgba(148, 163, 184, 0.32);
+    color: #f8fafc;
+}
+
+body.rc-app .header-search input::placeholder {
+    color: rgba(226, 232, 240, 0.68);
+}
+
+body.rc-app .filters-toggle,
+body.rc-app .gun-sync-status,
+body.rc-app .user-menu-button,
+body.rc-app .ai-drawer-toggle {
+    background: rgba(15, 23, 42, 0.75);
+    border-color: rgba(148, 163, 184, 0.35);
+}
+
+body.rc-app .main-content {
+    background: transparent;
+}
+
+body.rc-app .container {
+    max-width: 1400px;
+}
+
+body.rc-app .section,
+body.rc-app .records-container,
+body.rc-app .filters-section,
+body.rc-app .dynamic-fields {
+    background: rgba(15, 23, 42, 0.64);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.36);
+    border-radius: 14px;
+    color: #e5e7eb;
+}
+
+body.rc-app .section h2,
+body.rc-app .section h3,
+body.rc-app .section h4 {
+    color: #f8fafc;
+}
+
+body.rc-app .filters-section label,
+body.rc-app .form-group label,
+body.rc-app .header-control-group label {
+    color: #cbd5e1;
+}
+
+body.rc-app .filter-group input,
+body.rc-app .filter-group select,
+body.rc-app .form-group input,
+body.rc-app .form-group textarea,
+body.rc-app .form-group select,
+body.rc-app .header-control-group select {
+    background: rgba(2, 8, 23, 0.78);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    color: #f8fafc;
+    border-radius: 10px;
+}
+
+body.rc-app .filter-group input:focus,
+body.rc-app .filter-group select:focus,
+body.rc-app .form-group input:focus,
+body.rc-app .form-group textarea:focus,
+body.rc-app .form-group select:focus,
+body.rc-app .header-control-group select:focus {
+    border-color: rgba(129, 140, 248, 0.82);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    outline: none;
+}
+
+body.rc-app button,
+body.rc-app .btn-primary,
+body.rc-app #load-more-btn,
+body.rc-app #voice-load-more-btn {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #ffffff;
+    border: 1px solid rgba(129, 140, 248, 0.45);
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+body.rc-app button:hover,
+body.rc-app .btn-primary:hover,
+body.rc-app #load-more-btn:hover,
+body.rc-app #voice-load-more-btn:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+}
+
+body.rc-app .btn-secondary {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(148, 163, 184, 0.45);
+}
+
+body.rc-app .record-card,
+body.rc-app .record-card.list-view {
+    background: rgba(15, 23, 42, 0.86);
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    color: #e2e8f0;
+}
+
+body.rc-app .record-card:hover,
+body.rc-app .record-card.list-view:hover {
+    border-color: rgba(129, 140, 248, 0.7);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+body.rc-app .record-title {
+    color: #f8fafc;
+}
+
+body.rc-app .record-description,
+body.rc-app .record-metadata {
+    color: #cbd5e1;
+}
+
+body.rc-app #publish-tab .section > p {
+    color: #cbd5e1;
+}
+
+body.rc-app .publish-form {
+    background: rgba(2, 8, 23, 0.34);
+    border: 1px solid rgba(99, 102, 241, 0.22);
+    border-radius: 12px;
+}
+
+body.rc-app .publish-progress {
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.32);
+}
+
+body.rc-app .progress-bar {
+    background: rgba(15, 23, 42, 0.65);
+}
+
+body.rc-app .progress-fill {
+    background: linear-gradient(90deg, #06b6d4 0%, #22c55e 100%);
+}
+
+body.rc-app .success-message {
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.45);
+    color: #86efac;
+}
+
+body.rc-app .error-message {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    color: #fca5a5;
+}
+
+@media (max-width: 960px) {
+    body.rc-app .header-content {
+        padding: 10px 14px;
+    }
+
+    body.rc-app .header-search {
+        margin: 0 8px;
+        max-width: none;
+    }
+}

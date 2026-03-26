@@ -3705,8 +3705,9 @@
 
         */
     </style>
+    <link rel="stylesheet" href="/css/reference-client-modern.css">
 </head>
-<body>
+<body class="rc-app">
     <!-- Header -->
     <div class="header">
         <div class="header-content">
@@ -10503,6 +10504,12 @@ Return ONLY a valid JSON object with the field values, no additional text or exp
                             <small>Supports markdown formatting</small>
                         </div>
 
+                        <div class="form-group">
+                            <label for="post-signing-mnemonic">Signing Mnemonic (v0.9):</label>
+                            <textarea id="post-signing-mnemonic" placeholder="Enter 12-24 word mnemonic used for creator DID signing..." rows="2"></textarea>
+                            <small>Required for signed publish (api/debug/sign + api/records/publishSigned).</small>
+                        </div>
+
                         <!-- Author Information (for articles) -->
                         <div id="author-section">
                             <div class="form-group">
@@ -10529,6 +10536,16 @@ Return ONLY a valid JSON object with the field values, no additional text or exp
                             </div>
 
                             <div class="form-group">
+                                <label for="post-video-url">Video URL (optional, for video template):</label>
+                                <input type="url" id="post-video-url" placeholder="https://example.com/video.mp4">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="post-image-url">Image URL (optional, for image template):</label>
+                                <input type="url" id="post-image-url" placeholder="https://example.com/image.jpg">
+                            </div>
+
+                            <div class="form-group">
                                 <label for="post-web-url">Source URL:</label>
                                 <input type="url" id="post-web-url" placeholder="Original article URL (if reposting)">
                             </div>
@@ -10551,6 +10568,13 @@ Return ONLY a valid JSON object with the field values, no additional text or exp
                             <label>
                                 <input type="checkbox" id="post-nsfw"> NSFW Content
                             </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Include optional templates in this Post payload:</label>
+                            <label><input type="checkbox" id="post-include-text" checked> Include text template</label>
+                            <label><input type="checkbox" id="post-include-video"> Include video template (requires Video URL)</label>
+                            <label><input type="checkbox" id="post-include-image"> Include image template (requires Image URL)</label>
                         </div>
 
                         <!-- GUN-specific options -->
@@ -22984,163 +23008,275 @@ CRITICAL:
 
         // ==================== END MUSIC RELEASE (SIMPLE) FUNCTIONS ====================
 
+        function getPublishApiBase() {
+            return (typeof window !== 'undefined' && window.API_BASE_URL) ? window.API_BASE_URL : '';
+        }
+
+        async function fetchTemplateForSignedPost(templateName) {
+            const base = getPublishApiBase();
+            const response = await fetch(`${base}/api/templates/${encodeURIComponent(templateName)}`);
+            if (!response.ok) {
+                throw new Error(`Template "${templateName}" not found`);
+            }
+            return response.json();
+        }
+
+        function convertRecordToCompressedWithTemplate(record, template) {
+            const fieldsInTemplate = template?.data?.fieldsInTemplate || template?.fieldsInTemplate || {};
+            const templateDid = template?.oip?.didTx || template?.oip?.did;
+
+            if (!templateDid) {
+                throw new Error(`Template DID missing for ${template?.data?.template || 'unknown template'}`);
+            }
+
+            const compressed = { t: templateDid };
+            Object.entries(fieldsInTemplate).forEach(([fieldName, fieldInfo]) => {
+                const value = record[fieldName];
+                if (value === undefined || value === null || value === '') {
+                    return;
+                }
+
+                const index = fieldInfo?.index;
+                const fieldType = fieldInfo?.type || 'string';
+                if (index === undefined || index === null) {
+                    return;
+                }
+
+                if (fieldType.startsWith('repeated ')) {
+                    if (Array.isArray(value) && value.length > 0) {
+                        compressed[index] = value;
+                    }
+                    return;
+                }
+
+                if (fieldType === 'bool') {
+                    compressed[index] = value === true || value === 'true';
+                    return;
+                }
+
+                compressed[index] = value;
+            });
+
+            return compressed;
+        }
+
+        function setPublishPanelMessage({ isError = false, html = '' }) {
+            const statusEl = document.getElementById('publish-status');
+            const successEl = document.getElementById('publish-success');
+            statusEl.classList.add('hidden');
+            successEl.classList.add('hidden');
+
+            if (isError) {
+                statusEl.innerHTML = html;
+                statusEl.classList.remove('hidden');
+            } else {
+                successEl.innerHTML = html;
+                successEl.classList.remove('hidden');
+            }
+        }
+
         // Publishing functions for each record type
         async function publishPost() {
             try {
-                const postSource = document.getElementById('post-source').value;
-                let postData;
+                const title = document.getElementById('post-title')?.value?.trim() || '';
+                const description = document.getElementById('post-description')?.value?.trim() || '';
+                const articleText = document.getElementById('post-content')?.value?.trim() || '';
+                const bylineWriter = document.getElementById('post-author')?.value?.trim() || '';
+                const bylineWritersTitle = document.getElementById('post-author-title')?.value?.trim() || '';
+                const bylineWritersLocation = document.getElementById('post-author-location')?.value?.trim() || '';
+                const webUrl = document.getElementById('post-web-url')?.value?.trim() || '';
+                const featuredImage = document.getElementById('post-featured-image')?.value?.trim() || '';
+                const replyTo = document.getElementById('post-reply-to')?.value?.trim() || '';
+                const postVideoUrl = document.getElementById('post-video-url')?.value?.trim() || '';
+                const postImageUrl = document.getElementById('post-image-url')?.value?.trim() || '';
+                const mnemonic = document.getElementById('post-signing-mnemonic')?.value?.trim() || '';
+                const nsfw = !!document.getElementById('post-nsfw')?.checked;
+                const includeText = !!document.getElementById('post-include-text')?.checked;
+                const includeVideo = !!document.getElementById('post-include-video')?.checked;
+                const includeImage = !!document.getElementById('post-include-image')?.checked;
+                const tags = (document.getElementById('post-tags')?.value || '')
+                    .split(',')
+                    .map((t) => t.trim())
+                    .filter(Boolean);
 
-                if (postSource === 'archive-x' && window.scrapedXPostData) {
-                    // Use scraped X post data
-                    postData = {
-                        basic: {
-                            name: window.scrapedXPostData.text.substring(0, 100) + (window.scrapedXPostData.text.length > 100 ? '...' : ''),
-                            description: window.scrapedXPostData.text,
-                            language: 'en',
-                            date: window.scrapedXPostData.date ? Math.floor(new Date(window.scrapedXPostData.date).getTime() / 1000) : Math.floor(Date.now() / 1000),
-                            nsfw: false,
-                            tagItems: ['twitter', 'x', 'social-media'],
-                            webUrl: window.scrapedXPostData.url // Original X post URL
-                        },
-                        post: {
-                            articleText: window.scrapedXPostData.text,
-                            bylineWriter: window.scrapedXPostData.author,
-                            webUrl: window.scrapedXPostData.url,
-                            imageItems: window.scrapedXPostData.images || [],
-                            imageCaptionItems: [],
-                            videoItems: [],
-                            audioItems: [],
-                            audioCaptionItems: [],
-                            replyTo: ''
-                        }
-                    };
-                } else if (postSource === 'archive-web' && window.scrapedWebArticleData) {
-                    // Use scraped web article data
-                    postData = {
-                        basic: {
-                            name: window.scrapedWebArticleData.title || 'Archived Web Article',
-                            description: window.scrapedWebArticleData.description || '',
-                            language: 'en',
-                            date: window.scrapedWebArticleData.publishDate || Math.floor(Date.now() / 1000),
-                            nsfw: false,
-                            tagItems: window.scrapedWebArticleData.tags || ['web-article', 'archived'],
-                            webUrl: window.scrapedWebArticleData.url // Original article URL
-                        },
-                        post: {
-                            articleText: window.scrapedWebArticleData.content || '',
-                            bylineWriter: window.scrapedWebArticleData.byline || '',
-                            webUrl: window.scrapedWebArticleData.url,
-                            featuredImage: window.scrapedWebArticleData.embeddedImageUrl || '',
-                            imageItems: [],
-                            imageCaptionItems: [],
-                            videoItems: [],
-                            audioItems: window.scrapedWebArticleData.summaryTTS ? [{
-                                audio: {
-                                    webUrl: window.scrapedWebArticleData.summaryTTS,
-                                    contentType: 'audio/mpeg'
-                                }
-                            }] : [],
-                            audioCaptionItems: [],
-                            replyTo: ''
-                        }
-                    };
-                } else {
-                    // Use manual form data
-                    postData = {
-                        basic: {
-                            name: document.getElementById('post-title').value,
-                            description: document.getElementById('post-description').value,
-                            language: 'en',
-                            date: Math.floor(Date.now() / 1000),
-                            nsfw: document.getElementById('post-nsfw').checked,
-                            tagItems: document.getElementById('post-tags').value.split(',').map(t => t.trim()).filter(t => t)
-                        },
-                        post: {
-                            articleText: document.getElementById('post-content').value,
-                            bylineWriter: document.getElementById('post-author')?.value || '',
-                            bylineWritersTitle: document.getElementById('post-author-title')?.value || '',
-                            bylineWritersLocation: document.getElementById('post-author-location')?.value || '',
-                            webUrl: document.getElementById('post-web-url')?.value || '',
-                            featuredImage: document.getElementById('post-featured-image')?.value || '',
-                            replyTo: document.getElementById('post-reply-to')?.value || '',
-                            imageItems: [],
-                            imageCaptionItems: [],
-                            videoItems: [],
-                            audioItems: [],
-                            audioCaptionItems: []
-                        }
-                    };
+                if (!title) {
+                    setPublishPanelMessage({ isError: true, html: 'Please provide a title for the post.' });
+                    return;
                 }
-
-                if (!postData.basic.name) {
-                    showMessage('publish-status', 'Please provide a title for the post', 'error');
+                if (!articleText) {
+                    setPublishPanelMessage({ isError: true, html: 'Please provide post content.' });
+                    return;
+                }
+                if (!mnemonic || mnemonic.split(/\s+/).length < 12) {
+                    setPublishPanelMessage({ isError: true, html: 'Please provide a valid 12-24 word signing mnemonic.' });
+                    return;
+                }
+                if (includeVideo && !postVideoUrl) {
+                    setPublishPanelMessage({ isError: true, html: 'Video template is enabled, but no Video URL was provided.' });
+                    return;
+                }
+                if (includeImage && !postImageUrl) {
+                    setPublishPanelMessage({ isError: true, html: 'Image template is enabled, but no Image URL was provided.' });
                     return;
                 }
 
-                // For archived content, the article may already be published, so just show success
-                if (postSource === 'archive-web' && (window.scrapedWebArticleData?.did || window.scrapedWebArticleData?.didTx)) {
-                    const did = window.scrapedWebArticleData.did || window.scrapedWebArticleData.didTx;
-                    showMessage('publish-success', `Article already archived! DID: ${did}`, 'success');
-                    return;
+                setPublishPanelMessage({ html: 'Preparing templates and signing payload...' });
+
+                const requiredTemplates = ['basic', 'post'];
+                const optionalTemplates = [];
+                if (includeText) optionalTemplates.push('text');
+                if (includeVideo) optionalTemplates.push('video');
+                if (includeImage) optionalTemplates.push('image');
+                const templateNames = [...requiredTemplates, ...optionalTemplates];
+                const templateMap = {};
+
+                for (const templateName of templateNames) {
+                    templateMap[templateName] = await fetchTemplateForSignedPost(templateName);
                 }
 
-                if (!postData.post.articleText && postSource === 'manual') {
-                    showMessage('publish-status', 'Please fill in content', 'error');
-                    return;
+                const basicRecord = {
+                    name: title,
+                    description,
+                    date: new Date().toISOString(),
+                    language: 'en',
+                    nsfw,
+                    tagItems: tags
+                };
+
+                const postRecord = {
+                    webUrl,
+                    bylineWriter,
+                    bylineWritersTitle,
+                    bylineWritersLocation,
+                    articleText,
+                    featuredImage,
+                    replyTo,
+                    imageItems: postImageUrl ? [postImageUrl] : [],
+                    imageCaptionItems: [],
+                    videoItems: postVideoUrl ? [postVideoUrl] : [],
+                    audioItems: [],
+                    audioCaptionItems: []
+                };
+
+                const compressedRecords = [
+                    convertRecordToCompressedWithTemplate(basicRecord, templateMap.basic),
+                    convertRecordToCompressedWithTemplate(postRecord, templateMap.post)
+                ];
+
+                if (includeText) {
+                    const textRecord = {
+                        name: title,
+                        title,
+                        description,
+                        text: articleText,
+                        content: articleText,
+                        language: 'en',
+                        webUrl
+                    };
+                    compressedRecords.push(convertRecordToCompressedWithTemplate(textRecord, templateMap.text));
                 }
 
-                // Get storage type and GUN-specific options
-                const storageType = document.getElementById('publish-storage-type')?.value || 'arweave';
-                const localId = document.getElementById('gun-local-id')?.value?.trim() || null;
-                const isPrivate = document.getElementById('gun-private')?.checked || false;
-
-                // Build request body with storage options
-                const requestBody = { ...postData };
-                if (storageType === 'gun') {
-                    requestBody.storage = 'gun';
-                    if (localId) {
-                        requestBody.localId = localId;
-                    }
-                    if (isPrivate) {
-                        requestBody.accessControl = { private: true };
-                    }
-                } else {
-                    requestBody.blockchain = storageType;
+                if (includeVideo) {
+                    const videoRecord = {
+                        name: `${title} (video)`,
+                        description,
+                        webUrl: postVideoUrl,
+                        thumbnailAddress: featuredImage
+                    };
+                    compressedRecords.push(convertRecordToCompressedWithTemplate(videoRecord, templateMap.video));
                 }
 
-                // Determine endpoint based on storage type
-                const endpoint = storageType === 'gun' ? '/api/records/newRecord' : '/api/publish/newPost';
-                const queryParams = storageType === 'gun' ? '?recordType=post' : '';
+                if (includeImage) {
+                    const imageRecord = {
+                        name: `${title} (image)`,
+                        description,
+                        webUrl: postImageUrl,
+                        displayAddress: postImageUrl,
+                        thumbnailAddress: postImageUrl
+                    };
+                    compressedRecords.push(convertRecordToCompressedWithTemplate(imageRecord, templateMap.image));
+                }
 
-                const response = await fetch(`${endpoint}${queryParams}`, {
+                const base = getPublishApiBase();
+                const identityResponse = await fetch(`${base}/api/debug/identity`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify(requestBody)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mnemonic })
                 });
-
-                const result = await response.json();
-                
-                if (response.ok) {
-                    // Handle different response formats for different storage types
-                    let successMessage;
-                    if (storageType === 'gun') {
-                        successMessage = `Post saved to GUN! DID: ${result.did}${result.encrypted ? ' (Encrypted)' : ''}`;
-                    } else {
-                        successMessage = `Post published successfully! Transaction ID: ${result.transactionId}`;
-                    }
-                    showMessage('publish-success', successMessage, 'success');
-                    
-                    // Clear form
-                    document.getElementById('publish-record-type').value = '';
-                    loadPublishInterface();
-                } else {
-                    showMessage('publish-status', result.error || 'Failed to publish post', 'error');
+                if (!identityResponse.ok) {
+                    const error = await identityResponse.json().catch(() => ({}));
+                    throw new Error(error.message || error.error || 'Failed to derive identity from mnemonic');
                 }
+                const identity = await identityResponse.json();
+
+                const payload = {
+                    '@context': identity.did,
+                    tags: [
+                        { name: 'Index-Method', value: 'OIP' },
+                        { name: 'Ver', value: '0.9.0' },
+                        { name: 'Content-Type', value: 'application/json' },
+                        { name: 'Creator', value: identity.did },
+                        { name: 'RecordType', value: 'post' }
+                    ],
+                    fragments: [
+                        {
+                            id: crypto.randomUUID(),
+                            dataType: 'Record',
+                            recordType: 'post',
+                            records: compressedRecords
+                        }
+                    ]
+                };
+
+                const signResponse = await fetch(`${base}/api/debug/sign`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mnemonic, payload })
+                });
+                if (!signResponse.ok) {
+                    const error = await signResponse.json().catch(() => ({}));
+                    throw new Error(error.message || error.error || 'Signing failed');
+                }
+                const signResult = await signResponse.json();
+                const signedPayload = signResult?.signedPayload || signResult;
+
+                const publishResponse = await fetch(`${base}/api/records/publishSigned`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        payload: signedPayload,
+                        verifySignature: false
+                    })
+                });
+                const publishResult = await publishResponse.json();
+                if (!publishResponse.ok || !publishResult?.success) {
+                    throw new Error(publishResult?.message || publishResult?.error || 'Signed publish failed');
+                }
+
+                const did = publishResult.did || '';
+                const txId = publishResult.transactionId || '';
+                const immediateIndex = publishResult?.destinations?.arweave?.indexedImmediately === true;
+                const indexError = publishResult?.destinations?.arweave?.indexError || '';
+
+                let successHtml = `
+                    <div><strong>Post published successfully.</strong></div>
+                    <div style="margin-top: 6px;">DID: <code>${did || 'n/a'}</code></div>
+                    <div>Transaction: <code>${txId || 'n/a'}</code></div>
+                    <div style="margin-top: 6px;">${immediateIndex ? 'Indexed immediately.' : 'Published; waiting for sync indexing.'}</div>
+                `;
+                if (indexError) {
+                    successHtml += `<div style="margin-top: 4px;">Index note: ${indexError}</div>`;
+                }
+                successHtml += `
+                    <div style="margin-top: 10px;">
+                        <a href="/did-documents" target="_blank">Open DID Documents Explorer</a>
+                        ${did ? `<br><a href="/api/records?recordType=post&did=${encodeURIComponent(did)}" target="_blank">View post record query</a>` : ''}
+                    </div>
+                `;
+
+                setPublishPanelMessage({ html: successHtml });
             } catch (error) {
-                showMessage('publish-status', 'Network error: ' + error.message, 'error');
+                setPublishPanelMessage({ isError: true, html: `Publishing failed: ${error.message}` });
             }
         }
 
