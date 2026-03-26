@@ -23156,6 +23156,37 @@ CRITICAL:
                     return;
                 }
 
+                const normalizedFieldType = String(fieldType).replace(/^repeated\s+/i, '').trim().toLowerCase();
+                if (['uint64', 'long', 'integer', 'int', 'number', 'float', 'double'].includes(normalizedFieldType)) {
+                    if (typeof value === 'number') {
+                        compressed[index] = value;
+                        return;
+                    }
+
+                    if (typeof value === 'string') {
+                        const trimmed = value.trim();
+                        if (!trimmed) {
+                            return;
+                        }
+
+                        if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+                            const numeric = ['float', 'number', 'double'].includes(normalizedFieldType)
+                                ? Number.parseFloat(trimmed)
+                                : Number.parseInt(trimmed, 10);
+                            if (!Number.isNaN(numeric)) {
+                                compressed[index] = numeric;
+                                return;
+                            }
+                        }
+
+                        const parsedMs = Date.parse(trimmed);
+                        if (!Number.isNaN(parsedMs) && ['uint64', 'long', 'integer', 'int'].includes(normalizedFieldType)) {
+                            compressed[index] = Math.floor(parsedMs / 1000);
+                            return;
+                        }
+                    }
+                }
+
                 compressed[index] = value;
             });
 
@@ -23341,7 +23372,7 @@ CRITICAL:
                 const basicRecord = {
                     name: title,
                     description,
-                    date: new Date().toISOString(),
+                    date: Math.floor(Date.now() / 1000),
                     language: 'en',
                     nsfw,
                     tagItems: tags

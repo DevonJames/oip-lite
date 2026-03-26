@@ -969,6 +969,47 @@ const processRecordForElasticsearch = (record, templateFields = null) => {
         // Complex types that expect nested structures
         return fieldType === 'object' || fieldType === 'json' || fieldType === 'map';
     };
+
+    const getBaseType = (fieldType) => {
+        if (!fieldType) return '';
+        return String(fieldType).replace(/^repeated\s+/i, '').trim().toLowerCase();
+    };
+
+    const expectsNumeric = (fieldType) => {
+        const baseType = getBaseType(fieldType);
+        return ['uint64', 'long', 'integer', 'int', 'float', 'number', 'double'].includes(baseType);
+    };
+
+    const coerceNumeric = (value, fieldType) => {
+        if (value === null || value === undefined || value === '') return value;
+        const baseType = getBaseType(fieldType);
+
+        if (typeof value === 'number') return value;
+
+        if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (!trimmed) return value;
+
+            // Accept ISO timestamps for numeric date-like fields, normalize to Unix seconds.
+            if (!/^-?\d+(\.\d+)?$/.test(trimmed)) {
+                const parsedMs = Date.parse(trimmed);
+                if (!Number.isNaN(parsedMs) && ['uint64', 'long', 'integer', 'int'].includes(baseType)) {
+                    return Math.floor(parsedMs / 1000);
+                }
+                return value;
+            }
+
+            if (['float', 'number', 'double'].includes(baseType)) {
+                const floatVal = Number.parseFloat(trimmed);
+                return Number.isNaN(floatVal) ? value : floatVal;
+            }
+
+            const intVal = Number.parseInt(trimmed, 10);
+            return Number.isNaN(intVal) ? value : intVal;
+        }
+
+        return value;
+    };
     
     // Recursively process the record data
     const processValue = (obj, fieldName = '', recordTypeFields = null) => {
@@ -979,6 +1020,10 @@ const processRecordForElasticsearch = (record, templateFields = null) => {
         // Handle strings - might need to parse to array/object based on template
         if (typeof obj === 'string') {
             const trimmed = obj.trim();
+
+            if (expectedType && expectsNumeric(expectedType)) {
+                return coerceNumeric(obj, expectedType);
+            }
             
             // If template says it should be an array (repeated type) and we have a JSON array string
             if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
@@ -1022,6 +1067,9 @@ const processRecordForElasticsearch = (record, templateFields = null) => {
             if (expectedType && expectsString(expectedType)) {
                 debugLog(`      🔧 [processRecord] Template expects string for '${fieldName}', stringifying array`);
                 return JSON.stringify(obj);
+            }
+            if (expectedType && expectsNumeric(expectedType)) {
+                return obj.map((item) => coerceNumeric(item, expectedType));
             }
             return obj.map((item, idx) => processValue(item, fieldName, recordTypeFields));
         }
